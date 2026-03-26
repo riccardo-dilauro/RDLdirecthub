@@ -1,0 +1,514 @@
+{
+  "generatedAt": "2026-03-23T08:21:56.097Z",
+  "artistName": "ALAN.LY",
+  "youtubeChannel": "https://www.youtube.com/@ALANLYMusic",
+  "syncNotes": {
+    "youtube": "YouTube sync OK"
+  },
+  "albums": [
+    {
+      "id": "alb-1",
+      "kind": "album",
+      "source": "youtube",
+      "title": "Official Video",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "album"
+      ],
+      "cover": "https://i.ytimg.com/vi/T8EKmU5hETo/hqdefault.jpg",
+      "description": "Album/collection aggregato automaticamente da YouTube. Traccia rappresentativa: Delayed.",
+      "youtube": "https://www.youtube.com/watch?v=T8EKmU5hETo",
+      "tracks": [
+        "Delayed"
+      ],
+      "featured": true,
+      "releasedAt": "2026-02-13"
+    },
+    {
+      "id": "alb-2",
+      "kind": "album",
+      "source": "youtube",
+      "title": "ALAN.REMIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "album"
+      ],
+      "cover": "https://i.ytimg.com/vi/NlOUSdpU9Xs/hqdefault.jpg",
+      "description": "Album/collection aggregato automaticamente da YouTube. Traccia rappresentativa: Drinkiee.",
+      "youtube": "https://www.youtube.com/watch?v=NlOUSdpU9Xs",
+      "tracks": [
+        "Drinkiee",
+        "Precious",
+        "Devotion",
+        "Passion"
+      ],
+      "featured": true,
+      "releasedAt": "2026-02-11"
+    },
+    {
+      "id": "alb-3",
+      "kind": "album",
+      "source": "youtube",
+      "title": "Original MIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "album"
+      ],
+      "cover": "https://i.ytimg.com/vi/8oSsrT3T2ZE/hqdefault.jpg",
+      "description": "Album/collection aggregato automaticamente da YouTube. Traccia rappresentativa: Sunset.",
+      "youtube": "https://www.youtube.com/watch?v=8oSsrT3T2ZE",
+      "tracks": [
+        "Sunset",
+        "Infinity",
+        "Glory",
+        "Years",
+        "Choke",
+        "BOX",
+        "Blessing"
+      ],
+      "featured": true,
+      "releasedAt": "2026-01-06"
+    },
+    {
+      "id": "alb-4",
+      "kind": "album",
+      "source": "youtube",
+      "title": "Club MIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "album"
+      ],
+      "cover": "https://i.ytimg.com/vi/YeJJei0ob0Y/hqdefault.jpg",
+      "description": "Album/collection aggregato automaticamente da YouTube. Traccia rappresentativa: Space.",
+      "youtube": "https://www.youtube.com/watch?v=YeJJei0ob0Y",
+      "tracks": [
+        "Space"
+      ],
+      "featured": true,
+      "releasedAt": "2026-01-01"
+    },
+    {
+      "id": "alb-5",
+      "kind": "album",
+      "source": "youtube",
+      "title": "Radio EDIT",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "album"
+      ],
+      "cover": "https://i.ytimg.com/vi/a4XCIsK7OFE/hqdefault.jpg",
+      "description": "Album/collection aggregato automaticamente da YouTube. Traccia rappresentativa: Beep.",
+      "youtube": "https://www.youtube.com/watch?v=a4XCIsK7OFE",
+      "tracks": [
+        "Beep"
+      ],
+      "featured": false,
+      "releasedAt": "2026-01-01"
+    },
+    {
+      "id": "alb-6",
+      "kind": "album",
+      "source": "youtube",
+      "title": "ALAN.REWORK (YT Bonus Track)",
+      "artist": "ALAN.LY",
+      "year": 2025,
+      "genre": [
+        "youtube",
+        "album"
+      ],
+      "cover": "https://i.ytimg.com/vi/AJrqMJ-49Sg/hqdefault.jpg",
+      "description": "Album/collection aggregato automaticamente da YouTube. Traccia rappresentativa: Redemption.",
+      "youtube": "https://www.youtube.com/watch?v=AJrqMJ-49Sg",
+      "tracks": [
+        "Redemption"
+      ],
+      "featured": false,
+      "releasedAt": "2025-12-29"
+    }
+  ],
+  "singles": [
+    {
+      "id": "yt-1",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Delayed - Official Video",
+      "trackName": "Delayed",
+      "albumName": "Official Video",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/T8EKmU5hETo/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2026-02-13.",
+      "youtube": "https://www.youtube.com/watch?v=T8EKmU5hETo",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": true,
+      "releasedAt": "2026-02-13"
+    },
+    {
+      "id": "yt-2",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Drinkiee - ALAN.REMIX",
+      "trackName": "Drinkiee",
+      "albumName": "ALAN.REMIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/NlOUSdpU9Xs/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2026-02-11.",
+      "youtube": "https://www.youtube.com/watch?v=NlOUSdpU9Xs",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": true,
+      "releasedAt": "2026-02-11"
+    },
+    {
+      "id": "yt-3",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Sunset - Original MIX",
+      "trackName": "Sunset",
+      "albumName": "Original MIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/8oSsrT3T2ZE/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2026-01-06.",
+      "youtube": "https://www.youtube.com/watch?v=8oSsrT3T2ZE",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": true,
+      "releasedAt": "2026-01-06"
+    },
+    {
+      "id": "yt-4",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Infinity - Original MIX",
+      "trackName": "Infinity",
+      "albumName": "Original MIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/a92x38C5F9U/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2026-01-01.",
+      "youtube": "https://www.youtube.com/watch?v=a92x38C5F9U",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": true,
+      "releasedAt": "2026-01-01"
+    },
+    {
+      "id": "yt-5",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Glory - Original MIX",
+      "trackName": "Glory",
+      "albumName": "Original MIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/G4F42U6yI1Y/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2026-01-01.",
+      "youtube": "https://www.youtube.com/watch?v=G4F42U6yI1Y",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": false,
+      "releasedAt": "2026-01-01"
+    },
+    {
+      "id": "yt-6",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Years - Original MIX",
+      "trackName": "Years",
+      "albumName": "Original MIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/FJtqrt6YMG8/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2026-01-01.",
+      "youtube": "https://www.youtube.com/watch?v=FJtqrt6YMG8",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": false,
+      "releasedAt": "2026-01-01"
+    },
+    {
+      "id": "yt-7",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Space - Club MIX",
+      "trackName": "Space",
+      "albumName": "Club MIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/YeJJei0ob0Y/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2026-01-01.",
+      "youtube": "https://www.youtube.com/watch?v=YeJJei0ob0Y",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": false,
+      "releasedAt": "2026-01-01"
+    },
+    {
+      "id": "yt-8",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Choke - Original MIX",
+      "trackName": "Choke",
+      "albumName": "Original MIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/BrySwKF3vtc/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2026-01-01.",
+      "youtube": "https://www.youtube.com/watch?v=BrySwKF3vtc",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": false,
+      "releasedAt": "2026-01-01"
+    },
+    {
+      "id": "yt-9",
+      "kind": "single",
+      "source": "youtube",
+      "title": "BOX - Original MIX",
+      "trackName": "BOX",
+      "albumName": "Original MIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/KOBapt7l4nM/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2026-01-01.",
+      "youtube": "https://www.youtube.com/watch?v=KOBapt7l4nM",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": false,
+      "releasedAt": "2026-01-01"
+    },
+    {
+      "id": "yt-10",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Blessing - Original MIX",
+      "trackName": "Blessing",
+      "albumName": "Original MIX",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/acVW7NS_iR8/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2026-01-01.",
+      "youtube": "https://www.youtube.com/watch?v=acVW7NS_iR8",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": false,
+      "releasedAt": "2026-01-01"
+    },
+    {
+      "id": "yt-11",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Beep - Radio EDIT",
+      "trackName": "Beep",
+      "albumName": "Radio EDIT",
+      "artist": "ALAN.LY",
+      "year": 2026,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/a4XCIsK7OFE/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2026-01-01.",
+      "youtube": "https://www.youtube.com/watch?v=a4XCIsK7OFE",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": false,
+      "releasedAt": "2026-01-01"
+    },
+    {
+      "id": "yt-12",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Redemption - ALAN.REWORK (YT Bonus Track)",
+      "trackName": "Redemption",
+      "albumName": "ALAN.REWORK (YT Bonus Track)",
+      "artist": "ALAN.LY",
+      "year": 2025,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/AJrqMJ-49Sg/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2025-12-29.",
+      "youtube": "https://www.youtube.com/watch?v=AJrqMJ-49Sg",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": false,
+      "releasedAt": "2025-12-29"
+    },
+    {
+      "id": "yt-13",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Precious - ALAN.REMIX",
+      "trackName": "Precious",
+      "albumName": "ALAN.REMIX",
+      "artist": "ALAN.LY",
+      "year": 2025,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/MN8P423-5Bs/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2025-12-26.",
+      "youtube": "https://www.youtube.com/watch?v=MN8P423-5Bs",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": false,
+      "releasedAt": "2025-12-26"
+    },
+    {
+      "id": "yt-14",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Devotion - ALAN.REMIX",
+      "trackName": "Devotion",
+      "albumName": "ALAN.REMIX",
+      "artist": "ALAN.LY",
+      "year": 2025,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/-GU0tXR9oD8/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2025-12-24.",
+      "youtube": "https://www.youtube.com/watch?v=-GU0tXR9oD8",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": false,
+      "releasedAt": "2025-12-24"
+    },
+    {
+      "id": "yt-15",
+      "kind": "single",
+      "source": "youtube",
+      "title": "Passion - ALAN.REMIX",
+      "trackName": "Passion",
+      "albumName": "ALAN.REMIX",
+      "artist": "ALAN.LY",
+      "year": 2025,
+      "genre": [
+        "youtube",
+        "single"
+      ],
+      "cover": "https://i.ytimg.com/vi/eMsM64HPV_4/hqdefault.jpg",
+      "description": "Pubblicato su YouTube il 2025-12-21.",
+      "youtube": "https://www.youtube.com/watch?v=eMsM64HPV_4",
+      "hashtags": [
+        "youtube",
+        "single"
+      ],
+      "featured": false,
+      "releasedAt": "2025-12-21"
+    }
+  ],
+  "playlists": [
+    {
+      "id": "p-youtube-latest",
+      "title": "YouTube - Ultime Uscite",
+      "mood": "novita",
+      "energy": "alta",
+      "genre": [
+        "youtube",
+        "release"
+      ],
+      "cover": "https://i.ytimg.com/vi/T8EKmU5hETo/hqdefault.jpg",
+      "description": "Raccolta automatica basata sugli ultimi video del canale.",
+      "tracks": [
+        "Delayed - Official Video",
+        "Drinkiee - ALAN.REMIX",
+        "Sunset - Original MIX",
+        "Infinity - Original MIX",
+        "Glory - Original MIX",
+        "Years - Original MIX",
+        "Space - Club MIX",
+        "Choke - Original MIX",
+        "BOX - Original MIX",
+        "Blessing - Original MIX",
+        "Beep - Radio EDIT",
+        "Redemption - ALAN.REWORK (YT Bonus Track)"
+      ]
+    }
+  ]
+}
