@@ -614,6 +614,13 @@
     let score = 78;
     const findings = [];
     const advice = [];
+    let adPressure = 'low';
+    let adSignals = 0;
+
+    function countOccurrences(haystack, token) {
+      if (!haystack || !token) return 0;
+      return haystack.split(token).length - 1;
+    }
 
     const severePatterns = [
       'seed phrase', 'wallet recovery', 'private key', 'metamask verify',
@@ -666,8 +673,52 @@
     const hasHttpsHints = /https:\/\//.test(text);
     if (hasHttpsHints) score += 2;
 
+    // Ad pressure analysis: more aggressive ad markers -> lower trust.
+    const adMarkers = [
+      { token: 'adsbygoogle', weight: 4 },
+      { token: 'googlesyndication', weight: 4 },
+      { token: 'doubleclick', weight: 4 },
+      { token: 'adservice.google', weight: 3 },
+      { token: 'taboola', weight: 3 },
+      { token: 'outbrain', weight: 3 },
+      { token: 'popunder', weight: 3 },
+      { token: 'popup ad', weight: 3 },
+      { token: 'interstitial ad', weight: 3 },
+      { token: 'sponsored content', weight: 2 },
+      { token: 'advertisement', weight: 2 },
+      { token: 'sponsored link', weight: 2 },
+      { token: 'adsterra', weight: 3 },
+      { token: 'propellerads', weight: 3 },
+      { token: 'exoclick', weight: 3 }
+    ];
+
+    const adEvidence = [];
+    adSignals = adMarkers.reduce((acc, marker) => {
+      const occurrences = countOccurrences(text, marker.token);
+      if (occurrences > 0) {
+        adEvidence.push(`${marker.token} (${occurrences})`);
+      }
+      return acc + Math.min(occurrences, 8) * marker.weight;
+    }, 0);
+
+    if (adSignals >= 28) {
+      adPressure = 'high';
+      score -= 22;
+      findings.push(`⚠️ Pressione pubblicitaria molto alta rilevata: ${adEvidence.slice(0, 5).join(', ')}`);
+      advice.push('Troppe pubblicita\' aggressive possono indicare bassa affidabilita\' o rischio redirect: evita click su banner e popup.');
+    } else if (adSignals >= 14) {
+      adPressure = 'medium';
+      score -= 12;
+      findings.push('⚠️ Presenza elevata di elementi pubblicitari nel contenuto del sito.');
+      advice.push('Naviga con cautela: limita i click su contenuti sponsorizzati e finestre intrusive.');
+    } else if (adSignals >= 6) {
+      adPressure = 'medium';
+      score -= 6;
+      findings.push('ℹ️ Presenza moderata di pubblicita\' rilevata nel contenuto.');
+    }
+
     score = Math.max(0, Math.min(100, Math.round(score)));
-    return { score, findings, advice };
+    return { score, findings, advice, adPressure, adSignals };
   }
 
   function generateSafetyTips({ urlObj, score, contentSafety, siteExists }) {
@@ -694,6 +745,12 @@
 
     if (contentSafety && contentSafety.vtData && contentSafety.vtData.malicious > 0) {
       tips.push('VirusTotal ha trovato segnalazioni malevole: chiudi il sito e non interagire.');
+    }
+
+    if (contentSafety && contentSafety.adPressure === 'high') {
+      tips.push('Il sito mostra una quantita\' molto alta di pubblicita\': affidabilita\' ridotta e maggiore rischio di redirect/tracking.');
+    } else if (contentSafety && contentSafety.adPressure === 'medium') {
+      tips.push('Presenza pubblicitaria significativa: evita click impulsivi su banner e pulsanti "download".');
     }
 
     if (score < 60) {
@@ -785,12 +842,16 @@
     let siteContentScore = 72;
     const contentDetails = [];
     let advice = [];
+    let adPressure = 'low';
+    let adSignals = 0;
 
     if (snapshot && snapshot.fetched) {
       const snapshotAnalysis = analyzeSnapshotContent(snapshot.text);
       siteContentScore = snapshotAnalysis.score;
       contentDetails.push(...snapshotAnalysis.findings);
       advice = advice.concat(snapshotAnalysis.advice);
+      adPressure = snapshotAnalysis.adPressure || 'low';
+      adSignals = snapshotAnalysis.adSignals || 0;
     } else {
       contentDetails.push('⚠️ Analisi contenuto limitata: snapshot del sito non disponibile dal browser.');
       advice.push('Quando possibile, controlla manualmente pagina Privacy, Termini e Contatti del sito.');
@@ -826,6 +887,8 @@
       siteContentScore,
       riskPenalty,
       riskLevel,
+      adPressure,
+      adSignals,
       snapshotUsed: !!(snapshot && snapshot.fetched),
       advice
     };
