@@ -284,8 +284,9 @@ main {padding: 20px; background: var(--main-bg); min-height: 60vh; transition: b
 }
 
 [data-theme="dark"] .api-info {
-  background: rgba(156, 199, 255, 0.05);
-  color: rgba(230,238,248,0.5);
+  background: rgba(156, 199, 255, 0.14);
+  color: rgba(236, 243, 252, 0.9);
+  border-left-color: #90caf9;
 }
 
 /* Improved input focus states */
@@ -474,11 +475,15 @@ main {padding: 20px; background: var(--main-bg); min-height: 60vh; transition: b
 .settings-help {
   margin-top: 10px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.55;
+  color: rgba(0, 0, 0, 0.74);
 }
 
 .settings-help a {
   color: var(--nav-link);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .settings-status {
@@ -517,7 +522,12 @@ main {padding: 20px; background: var(--main-bg); min-height: 60vh; transition: b
 .settings-disclaimer {
   margin-top: 10px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.58);
+  line-height: 1.55;
+  color: rgba(0, 0, 0, 0.72);
+  background: rgba(33, 150, 243, 0.08);
+  border: 1px solid rgba(33, 150, 243, 0.22);
+  border-radius: 8px;
+  padding: 10px 12px;
 }
 
 .api-status-indicator {
@@ -586,37 +596,61 @@ main {padding: 20px; background: var(--main-bg); min-height: 60vh; transition: b
 [data-theme="dark"] .settings-card-desc,
 [data-theme="dark"] .settings-help,
 [data-theme="dark"] .settings-disclaimer {
-  color: rgba(230, 238, 248, 0.72);
+  color: rgba(236, 243, 252, 0.9);
+}
+
+[data-theme="dark"] .settings-card-desc {
+  color: rgba(236, 243, 252, 0.82);
+}
+
+[data-theme="dark"] .settings-help {
+  color: rgba(236, 243, 252, 0.9);
+}
+
+[data-theme="dark"] .settings-help a {
+  color: #b9dcff;
+}
+
+[data-theme="dark"] .settings-disclaimer {
+  color: rgba(244, 249, 255, 0.96);
+  background: rgba(144, 202, 249, 0.16);
+  border-color: rgba(144, 202, 249, 0.42);
 }
 
 [data-theme="dark"] .settings-status {
-  background: rgba(96, 125, 139, 0.2);
-  color: #cfd8dc;
+  background: rgba(120, 144, 156, 0.28);
+  color: #eef3f7;
+  border-left-color: #90a4ae;
 }
 
 [data-theme="dark"] .settings-status.success {
-  background: rgba(76, 175, 80, 0.2);
-  color: #90d68b;
+  background: rgba(76, 175, 80, 0.28);
+  color: #c4efc1;
+  border-left-color: #76d37c;
 }
 
 [data-theme="dark"] .settings-status.error {
-  background: rgba(211, 47, 47, 0.2);
-  color: #ff9b9b;
+  background: rgba(211, 47, 47, 0.28);
+  color: #ffc2c2;
+  border-left-color: #ff8f8f;
 }
 
 [data-theme="dark"] .settings-status.info {
-  background: rgba(33, 150, 243, 0.2);
-  color: #90caf9;
+  background: rgba(33, 150, 243, 0.28);
+  color: #c2e2ff;
+  border-left-color: #8cc8ff;
 }
 
 [data-theme="dark"] .api-status-indicator {
-  background: rgba(76, 175, 80, 0.2);
-  color: #90d68b;
+  background: rgba(76, 175, 80, 0.28);
+  color: #c4efc1;
+  border-left-color: #76d37c;
 }
 
 [data-theme="dark"] .api-status-indicator.neutral {
-  background: rgba(96, 125, 139, 0.2);
-  color: #cfd8dc;
+  background: rgba(120, 144, 156, 0.28);
+  color: #eef3f7;
+  border-left-color: #90a4ae;
 }
 
 /* ========== SITE REPUTATION BOX ========== */
