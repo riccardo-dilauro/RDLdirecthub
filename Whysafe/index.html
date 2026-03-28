@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <title>Whysafe - Controllo URL e Sicurezza Sito</title>
+  <meta name="description" content="Whysafe analizza URL e siti web con controlli anti-phishing, reputazione dominio, rilevamento contenuti illegali e consigli pratici di sicurezza.">
+  <link rel="icon" type="image/png" href="Elementi/WHISAFE3.png">
     <meta name="color-scheme" content="light dark">
     <script>
       (function () {
@@ -23,11 +25,12 @@
 <body>
     <header>
         <div class="navbar">
-            <div class="logo"><img src="Elementi/WHISAFE3.png"> </div>
+            <div class="logo"><img src="Elementi/WHISAFE3.png" alt="Logo Whysafe"> </div>
             <h1>Verifica ora il tuo URL con Whysafe!</h1>
             <nav>
                 <li><a class="active" href="index.html">Home</a></li>
                 <li><a href="about.html">About</a></li>
+              <li><a href="settings.html">Impostazioni</a></li>
             </nav>
             <button class="theme-toggle" aria-label="Switch to dark mode">🌙</button>
             <div class="burger">
@@ -57,144 +60,13 @@
           </div>
           <ul id="reasons" class="reasons"></ul>
           <div class="api-info">
-            ℹ️ Il controllo usa analisi locale + API esterne (URLhaus, Google Safe Browsing se configurato)
+            ℹ️ Il controllo usa analisi locale + API esterne (URLhaus, Google Safe Browsing se configurato) + blocklist torrent aggiornata automaticamente.
           </div>
         </div>
 
         <section class="how-it-works">
-          <h3>🔍 Sistema di Analisi Avanzato</h3>
-          <p><strong>Whysafe</strong> esegue controlli multi-livello per rilevare siti pericolosi:</p>
-          
-          <h4>Livello 1: Analisi Locale (istantanea)</h4>
-          <ul>
-            <li><strong>HTTPS:</strong> Se il sito non usa crittografia (−40%)</li>
-            <li><strong>Indirizzo IP:</strong> Uso di IP invece di dominio (−35%)</li>
-            <li><strong>Punycode/IDN:</strong> Possibile spoofing di dominio (−20%)</li>
-            <li><strong>TLD sospetti:</strong> Domini con estensioni rischiose come .tk, .ml (−15%)</li>
-            <li><strong>URL lungo:</strong> Possibile obfuscation (−18%)</li>
-            <li><strong>Caratteri @ e null bytes:</strong> Tecniche di phishing note (−25%, −20%)</li>
-            <li><strong>Typosquatting:</strong> Molti trattini nel dominio (−7 a −15%)</li>
-            <li><strong>URL Abbreviati:</strong> Nascondono il vero dominio (−15%)</li>
-          </ul>
-
-          <h4>Livello 2: Verifiche Esterne (gratuita)</h4>
-          <ul>
-            <li><strong>URLhaus:</strong> Database aggiornato di siti malevoli rilevati da ricercatori di malware (−50% se trovato)</li>
-            <li><strong>Google Safe Browsing:</strong> Database globale di phishing, malware, software indesiderato (−60% se rilevato) <em>— richiede configurazione API</em></li>
-          </ul>
-
-          <h4>Livello 3: Rilevamento Contenuto Illegale</h4>
-          <p><strong>Whysafe</strong> ora identifica automaticamente siti che ospitano contenuto illegale:</p>
-          <ul>
-            <li><strong>🎬 Torrent Illegali:</strong> The Pirate Bay, 1337x, RARBG, Kickass, etc.</li>
-            <li><strong>📺 Streaming Pirata:</strong> FMovies, SolarMovies, Putlocker, 123Movies, Soap2Day, etc.</li>
-            <li><strong>📥 File Sharing Illegale:</strong> RapidGator, Uploaded.net, Megashare, oBoom, etc.</li>
-            <li><strong>📚 Ebook Pirata:</strong> Z-Library, BookZZ, Library Genesis, SciHub, etc.</li>
-            <li><strong>⚠️ Pattern URL Sospetti:</strong> Analizza keywords e struttura URL per rilevare siti illegali</li>
-          </ul>
-          <p><strong>Risultato:</strong> Se rileva contenuto illegale, il punteggio scende drasticamente a <strong>5%</strong> con avvertenza critica. Questi siti espongono l'utente a malware, spyware, e virus.</p>
-
-          <h4>Livello 4: Analisi Completa del Sito (contenuto + struttura)</h4>
-          <p>Oltre all'URL, Whysafe controlla anche segnali dell'intero sito:</p>
-          <ul>
-            <li><strong>Contenuto della homepage:</strong> Ricerca pattern di phishing, urgenza falsa e richieste dati sensibili</li>
-            <li><strong>Download pericolosi:</strong> Rileva riferimenti frequenti a file eseguibili (.exe, .apk, .msi, etc.)</li>
-            <li><strong>Pagine fiducia:</strong> Verifica presenza di privacy policy, termini, contatti/about</li>
-            <li><strong>Verifica URL su VirusTotal:</strong> Con API key opzionale controlla rilevazioni multi-engine</li>
-          </ul>
-
-          <h4>Livello 5: Indice di Affidabilità del Sito (0-100%)</h4>
-          <p>Un punteggio dedicato che calcola quanto è affidabile il dominio stesso, indipendentemente dal contenuto:</p>
-          <ul>
-            <li><strong>Verifica Esistenza Sito:</strong> Controlla se il sito è raggiungibile e risponde correttamente</li>
-            <li><strong>Popolarità del Sito:</strong> Siti noti e affidabili (Google, Wikipedia, GitHub) hanno score maggiore</li>
-            <li><strong>Storico di Sicurezza:</strong> Se il sito ha avuto problemi di malware/phishing in passato (VirusTotal, URLhaus storico)</li>
-            <li><strong>Reputazione del TLD:</strong> Domini con TLD sospetti (.tk, .ml) hanno score inferiore</li>
-            <li><strong>Pattern di Phishing:</strong> Domini che contengono parole tipiche di phishing (login, verify, account)</li>
-            <li><strong>Complessità Dominio:</strong> Troppi sottodomini o struttura strana riduce la fiducia</li>
-          </ul>
-
-          <h4>Scoring Finale</h4>
-          <ul>
-            <li><strong style="color: #4caf50;">80-100%:</strong> ✓ SICURO — Probabilmente legittimo</li>
-            <li><strong style="color: #ffb74d;">60-79%:</strong> ⚠ SOSPETTO — Verificare con attenzione</li>
-            <li><strong style="color: #ff9800;">30-59%:</strong> ⛔ RISCHIOSO — Evitare se possibile</li>
-            <li><strong style="color: #d32f2f;">0-29%:</strong> 🚫 PERICOLOSO — Non visitare</li>
-          </ul>
-
-          <h4>Indice di Affidabilità del Sito </h4>
-          <p><em>Visualizzato separatamente nella sezione risultati</em></p>
-          <ul>
-            <li><strong style="color: #4caf50;">85-100%:</strong> ✓ ECCELLENTE — Sito molto affidabile e rinomato</li>
-            <li><strong style="color: #ffb74d;">70-84%:</strong> ⚠ BUONO — Sito affidabile senza problemi noti</li>
-            <li><strong style="color: #ff9800;">50-69%:</strong> ⛔ MEDIO — Sito generico con rischi moderati</li>
-            <li><strong style="color: #d32f2f;">0-49%:</strong> 🚫 SCARSO — Sito con problemi di affidabilità</li>
-          </ul>
-
-          <h4>Come viene Giustificato il Punteggio</h4>
-          <p>Ogni indice di affidabilità mostra i <strong>"Motivi del Punteggio"</strong> — una lista dettagliata di <strong>perché</strong> il sito ha ricevuto quel punteggio specifico:</p>
-          <ul>
-            <li><strong>Verifica Raggiungibilità:</strong> Il sito risponde correttamente ai server web e è attivo</li>
-            <li><strong>Dominio Conosciuto:</strong> Se il sito è nel database di domini affidabili globali</li>
-            <li><strong>Reputazione TLD:</strong> Se il dominio usa un'estensione trustworthy (.com, .org) o rischiosa (.tk, .ml)</li>
-            <li><strong>Storico Malware:</strong> Se il sito è mai stato rilevato con malware dai principali antivirus</li>
-            <li><strong>Crittografia SSL:</strong> Se la comunicazione è cifrata con HTTPS</li>
-            <li><strong>Pattern Phishing:</strong> Se il dominio contiene parole sospette come "verify", "login", "secure"</li>
-          </ul>
-        </section>
-
-        <section class="api-config">
-          <h3>⚙️ Configurazione API (Opzionale)</h3>
-          <p>Per abilitare i controlli avanzati con <strong>Google Safe Browsing</strong> e <strong>VirusTotal</strong>, puoi configurare le chiavi API:</p>
-          
-          <div style="background: rgba(0,0,0,0.04); padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 3px solid var(--accent);">
-            <ol style="margin: 0; padding-left: 20px;">
-              <li>Vai su <strong><a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></strong></li>
-              <li>Crea un progetto (se non lo hai)</li>
-              <li>Abilita <strong>Safe Browsing API</strong></li>
-              <li>Crea una chiave API (tipo "Browser")</li>
-              <li>Incolla le chiavi qui:</li>
-            </ol>
-          </div>
-
-          <div style="display: flex; gap: 8px; margin-top: 10px;">
-            <input id="apiKeyInput" type="password" placeholder="Incolla la chiave API di Google Safe Browsing" style="flex: 1;">
-            <button type="button" onclick="document.dispatchEvent(new CustomEvent('setApiKey', {detail: document.getElementById('apiKeyInput').value}))" style="background: var(--accent); color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-              Salva Chiave
-            </button>
-          </div>
-
-          <div style="display: flex; gap: 8px; margin-top: 10px;">
-            <input id="vtApiKeyInput" type="password" placeholder="Incolla la chiave API VirusTotal (opzionale ma consigliata)" style="flex: 1;">
-            <button type="button" onclick="document.dispatchEvent(new CustomEvent('setVtApiKey', {detail: document.getElementById('vtApiKeyInput').value}))" style="background: #ef6c00; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-              Salva VirusTotal
-            </button>
-          </div>
-          
-          <p style="font-size: 12px; color: rgba(0,0,0,0.5); margin-top: 8px;">
-            💡 Le chiavi sono salvate solo nel tuo browser locale. Non sono memorizzate su server di Whysafe.
-          </p>
-        </section>
-
-        <section class="user-safety-guide">
-          <h3>🛡️ Buone Pratiche Utente</h3>
-          <ul>
-            <li>Non inserire mai password, OTP, IBAN, numero carta o seed phrase su siti sospetti.</li>
-            <li>Controlla sempre il dominio lettera per lettera prima di fare login.</li>
-            <li>Evita download di file eseguibili da siti non ufficiali.</li>
-            <li>Se il punteggio è sotto 60%, cerca il servizio tramite fonte ufficiale.</li>
-            <li>Usa autenticazione a due fattori (2FA) su account importanti.</li>
-          </ul>
-        </section>
-
-        <section class="data-privacy">
-          <h3>🔒 Privacy dei Dati</h3>
-          <ul>
-            <li><strong>Analisi locale:</strong> Nessun dato inviato da qui</li>
-            <li><strong>URLhaus:</strong> Solo l'URL viene inviato a URLhaus; non ci sono log su di te</li>
-            <li><strong>Google Safe Browsing:</strong> Google riceve l'URL ma fornisce solo sì/no; scopri la loro <a href="https://safebrowsing.google.com/" target="_blank">politica di privacy</a></li>
-            <li><strong>Questa pagina:</strong> Nessun cookie, nessun tracciamento, open-source friendly</li>
-          </ul>
+          <h3>Guida rapida</h3>
+          <p>Per dettagli completi su metodologia e punteggi vai in <a href="about.html">About</a>. Per configurare le chiavi API vai in <a href="settings.html">Impostazioni</a>.</p>
         </section>
       </section>
     </main>
@@ -209,13 +81,14 @@
         </div>
 
         <nav class="footer-nav" aria-label="Footer">
+          <a href="settings.html">Impostazioni</a>
           <a href="privacy.html">Privacy</a>
           <a href="terms.html">Termini</a>
           <a href="contact.html">Contatti</a>
         </nav>
 
         <div class="footer-meta">
-          <div class="version">v2.4.0</div>
+          <div class="version">v2.5.0</div>
         </div>
       </div>
     </footer>

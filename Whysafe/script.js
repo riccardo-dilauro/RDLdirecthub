@@ -65,6 +65,9 @@
     GOOGLE_SAFE_BROWSE_API: localStorage.getItem('googleSafeBrowseKey') || '', // User can set this
     VIRUSTOTAL_API: localStorage.getItem('virusTotalApiKey') || '', // Optional but recommended
     URLHAUS_API: 'https://urlhaus-api.abuse.ch/v1/url/',
+    EXTERNAL_TORRENT_BLOCKLIST_URL: 'https://raw.githubusercontent.com/sakib-m/Pi-hole-Torrent-Blocklist/refs/heads/main/all-torrent-websites.txt',
+    EXTERNAL_TORRENT_BLOCKLIST_CACHE_KEY: 'whysafe_external_torrent_blocklist_v1',
+    EXTERNAL_TORRENT_BLOCKLIST_TTL: 86400000, // 24h
     ABUSEIPDB_API: 'https://api.abuseipdb.com/api/v2/check', // Requires key
     CONTENT_PROXY_BASE: 'https://r.jina.ai/http://',
     CACHE_DURATION: 3600000, // 1 hour cache
@@ -85,6 +88,157 @@
 
   function setCachedResult(key, data) {
     apiCache.set(key, { data, timestamp: Date.now() });
+  }
+
+  const externalTorrentBlocklistState = {
+    loaded: false,
+    loadingPromise: null,
+    domains: new Set(),
+    source: null,
+    updatedAt: null
+  };
+
+  function normalizeDomainCandidate(rawLine) {
+    if (!rawLine) return null;
+    let line = String(rawLine).trim().toLowerCase();
+    if (!line || line.startsWith('#')) return null;
+
+    // Handle hosts-file style: "0.0.0.0 domain.tld"
+    const hostParts = line.split(/\s+/);
+    if (hostParts.length >= 2 && /^\d+\.\d+\.\d+\.\d+$/.test(hostParts[0])) {
+      line = hostParts[1];
+    }
+
+    // Handle adblock style: ||domain.tld^
+    line = line.replace(/^\|\|/, '').replace(/\^.*$/, '');
+
+    // Handle URL lines
+    if (/^https?:\/\//.test(line)) {
+      try {
+        line = new URL(line).hostname;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Keep only hostname chars
+    line = line.replace(/^[*.]+/, '').replace(/\/+.*$/, '').replace(/[^a-z0-9.-]/g, '');
+    line = line.replace(/^www\./, '');
+    if (!line || line.length < 4 || !line.includes('.')) return null;
+    return line;
+  }
+
+  function setExternalBlocklistDomains(domainsArray, source, updatedAt) {
+    externalTorrentBlocklistState.domains = new Set(domainsArray || []);
+    externalTorrentBlocklistState.loaded = true;
+    externalTorrentBlocklistState.source = source || null;
+    externalTorrentBlocklistState.updatedAt = updatedAt || Date.now();
+  }
+
+  async function loadExternalTorrentBlocklist() {
+    if (externalTorrentBlocklistState.loaded) return externalTorrentBlocklistState;
+    if (externalTorrentBlocklistState.loadingPromise) return externalTorrentBlocklistState.loadingPromise;
+
+    externalTorrentBlocklistState.loadingPromise = (async () => {
+      let hasFreshLocalCache = false;
+
+      // 1) Try localStorage cache first
+      try {
+        const rawCached = localStorage.getItem(CONFIG.EXTERNAL_TORRENT_BLOCKLIST_CACHE_KEY);
+        if (rawCached) {
+          const parsed = JSON.parse(rawCached);
+          const age = Date.now() - (parsed.timestamp || 0);
+          if (Array.isArray(parsed.domains) && parsed.domains.length > 0 && age < CONFIG.EXTERNAL_TORRENT_BLOCKLIST_TTL) {
+            setExternalBlocklistDomains(parsed.domains, 'local-cache', parsed.timestamp);
+            hasFreshLocalCache = true;
+          }
+        }
+      } catch (e) {
+        console.warn('External blocklist local cache parse failed:', e.message);
+      }
+
+      if (hasFreshLocalCache) {
+        return externalTorrentBlocklistState;
+      }
+
+      // 2) Try network fetch
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT + 7000);
+        const response = await fetch(CONFIG.EXTERNAL_TORRENT_BLOCKLIST_URL, {
+          method: 'GET',
+          cache: 'no-store',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const text = await response.text();
+        const domains = Array.from(new Set(
+          text
+            .split(/\r?\n/)
+            .map(normalizeDomainCandidate)
+            .filter(Boolean)
+        ));
+
+        if (domains.length === 0) throw new Error('No valid domains parsed from external blocklist');
+
+        const now = Date.now();
+        setExternalBlocklistDomains(domains, 'network', now);
+
+        try {
+          localStorage.setItem(
+            CONFIG.EXTERNAL_TORRENT_BLOCKLIST_CACHE_KEY,
+            JSON.stringify({ timestamp: now, domains: domains })
+          );
+        } catch (e) {
+          console.warn('Unable to persist external blocklist cache:', e.message);
+        }
+
+        return externalTorrentBlocklistState;
+      } catch (e) {
+        console.warn('External torrent blocklist fetch failed:', e.message);
+      }
+
+      // 3) Fallback to stale local cache if available
+      try {
+        const rawCached = localStorage.getItem(CONFIG.EXTERNAL_TORRENT_BLOCKLIST_CACHE_KEY);
+        if (rawCached) {
+          const parsed = JSON.parse(rawCached);
+          if (Array.isArray(parsed.domains) && parsed.domains.length > 0) {
+            setExternalBlocklistDomains(parsed.domains, 'stale-local-cache', parsed.timestamp || Date.now());
+            return externalTorrentBlocklistState;
+          }
+        }
+      } catch (e) {
+        console.warn('External blocklist stale cache fallback failed:', e.message);
+      }
+
+      // Final fallback: mark loaded with empty set to avoid repeated requests in same session
+      setExternalBlocklistDomains([], 'unavailable', Date.now());
+      return externalTorrentBlocklistState;
+    })();
+
+    try {
+      return await externalTorrentBlocklistState.loadingPromise;
+    } finally {
+      externalTorrentBlocklistState.loadingPromise = null;
+    }
+  }
+
+  function matchDomainAgainstBlocklist(hostname, domainSet) {
+    if (!hostname || !domainSet || domainSet.size === 0) return null;
+    const host = hostname.toLowerCase().replace(/^www\./, '');
+    const parts = host.split('.');
+
+    // exact + suffix matching without iterating all entries
+    for (let i = 0; i <= parts.length - 2; i++) {
+      const candidate = parts.slice(i).join('.');
+      if (domainSet.has(candidate)) return candidate;
+    }
+
+    return null;
   }
 
   /* ==================== SITE REPUTATION SYSTEM ==================== */
@@ -126,7 +280,34 @@
     'freebsd.org': 97,
     'kernel.org': 99,
     'github.io': 88, // GitHub Pages (con wildcard)
+    'archive.org': 98,
   };
+
+  // Domini molto affidabili ma con contenuti user-generated (serve cautela sul singolo file/pagina)
+  const SPECIAL_TRUSTED_CONTENT_NOTICE = {
+    'archive.org': {
+      title: 'Archivio pubblico affidabile con contenuti eterogenei',
+      message: 'Archive.org e\' un servizio storico e molto affidabile, ma contiene materiale caricato da utenti/terze parti. Per sicurezza analizza sempre il file specifico con VirusTotal prima di aprirlo.',
+      tips: [
+        'Controlla autore e fonte del file prima di scaricare.',
+        'Verifica licenza/copyright del contenuto, soprattutto per media e software.',
+        'Per ogni download usa VirusTotal (file o URL diretto) prima dell\'esecuzione.'
+      ]
+    }
+  };
+
+  function getSpecialTrustedNotice(hostname, domain) {
+    if (SPECIAL_TRUSTED_CONTENT_NOTICE[domain]) {
+      return SPECIAL_TRUSTED_CONTENT_NOTICE[domain];
+    }
+
+    const host = (hostname || '').toLowerCase();
+    if (host === 'archive.org' || host.endsWith('.archive.org')) {
+      return SPECIAL_TRUSTED_CONTENT_NOTICE['archive.org'];
+    }
+
+    return null;
+  }
 
   // Database di domini con storico negativo
   const BLACKLISTED_DOMAINS = {
@@ -177,7 +358,12 @@
     'bookzz': { name: 'BookZZ', category: 'ebook-illegal', severity: 'high', reason: 'Repository di ebook in parte illegale' },
     'libgen': { name: 'Library Genesis', category: 'ebook-illegal', severity: 'high', reason: 'Repository di article e ebook controverso' },
     'scihub': { name: 'Sci-Hub', category: 'academic-piracy', severity: 'high', reason: 'Piattaforma illegale articoli accademici' },
-    'zlibrary': { name: 'Z-Library', category: 'ebook-illegal', severity: 'high', reason: 'Libreria digitale illegale' }
+    'zlibrary': { name: 'Z-Library', category: 'ebook-illegal', severity: 'high', reason: 'Libreria digitale illegale' },
+    'steamrip': { name: 'SteamRIP', category: 'software-piracy', severity: 'critical', reason: 'Distribuzione illegale di videogiochi/crack' },
+    'fitgirl': { name: 'FitGirl Repacks', category: 'software-piracy', severity: 'critical', reason: 'Distribuzione repack di videogiochi non autorizzati' },
+    'igg-games': { name: 'IGG Games', category: 'software-piracy', severity: 'critical', reason: 'Distribuzione non autorizzata di videogiochi' },
+    'skidrow': { name: 'Skidrow/CODEX mirrors', category: 'software-piracy', severity: 'critical', reason: 'Distribuzione crack e software pirata' },
+    'repack-games': { name: 'Repack Games', category: 'software-piracy', severity: 'critical', reason: 'Distribuzione repack/crack non autorizzati' }
   };
 
   // Pattern per rilevare siti illegali tramite analisi dell'URL
@@ -186,16 +372,53 @@
     'streaming-free', 'free-movies', 'watchmovies', 'filmstreaming',
     'dvdrip', 'bdrip', 'bluray-rip', 'hdtv', 'downloads',
     'rapidshare', 'megaupload', 'depositfiles', 
-    'ebook-download', 'free-pdf', 'book-pirate'
+    'ebook-download', 'free-pdf', 'book-pirate',
+    'steamrip', 'fitgirl', 'repack', 'skidrow', 'codex', 'cracked-games', 'free-games-download'
   ];
 
+  const VERY_HIGH_RISK_ILLEGAL_KEYWORDS = [
+    'piratebay', 'thepiratebay', '1337x', 'kickass', 'rarbg', 'torrentz',
+    'putlocker', 'fmovies', 'solarmovies', '123movies', 'soap2day',
+    'zlibrary', 'scihub', 'warez', 'keygen', 'crack',
+    'steamrip', 'fitgirl', 'igg-games', 'skidrow', 'codex'
+  ];
+
+  const ILLEGAL_CONTEXT_KEYWORDS = [
+    'torrent', 'stream', 'watch', 'download', 'magnet', 'rip', 'cam',
+    'hdrip', 'bdrip', 'dvdrip', 'free-movie', 'filmstreaming', 'subtitle'
+  ];
+
+  const PRIVATE_HOST_PATTERNS = [
+    /^localhost$/i,
+    /^127\./,
+    /^10\./,
+    /^192\.168\./,
+    /^172\.(1[6-9]|2\d|3[0-1])\./,
+    /^169\.254\./,
+    /^::1$/i,
+    /\.local$/i,
+    /\.lan$/i,
+    /\.home$/i,
+    /\.internal$/i,
+    /\.intra$/i,
+    /\.corp$/i
+  ];
+
+  function isPrivateOrInternalHost(hostname) {
+    if (!hostname) return false;
+    const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (!host.includes('.') && !/^\d+\.\d+\.\d+\.\d+$/.test(host)) return true;
+    return PRIVATE_HOST_PATTERNS.some((re) => re.test(host));
+  }
+
   // Rileva siti con contenuto illegale (torrent, streaming pirata, file sharing illegale)
-  function detectIllegalContent(urlObj, hostname) {
+  async function detectIllegalContent(urlObj, hostname) {
     const result = {
       isIllegal: false,
       category: null,
       reason: null,
       severity: null,
+      confidence: 'none',
       details: []
     };
 
@@ -207,18 +430,47 @@
         result.category = info.category;
         result.reason = info.reason;
         result.severity = info.severity;
+        result.confidence = 'confirmed';
         result.details.push(`🚫 Corrispondenza identificata: ${info.name} (${info.category})`);
         return result;
       }
     }
 
+    // 1.1 Check external torrent blocklist (GitHub feed + local cache)
+    try {
+      const externalList = await loadExternalTorrentBlocklist();
+      const matchedExternalDomain = matchDomainAgainstBlocklist(hostnameLower, externalList.domains);
+      if (matchedExternalDomain) {
+        result.isIllegal = true;
+        result.category = 'external-torrent-blocklist';
+        result.severity = 'critical';
+        result.confidence = 'confirmed';
+        result.reason = `Dominio presente nella blocklist torrent esterna: ${matchedExternalDomain}`;
+        result.details.push(`🚫 Match blocklist esterna (${externalList.source || 'unknown'}): ${matchedExternalDomain}`);
+        return result;
+      }
+    } catch (e) {
+      console.warn('External torrent blocklist match failed:', e.message);
+    }
+
     // 2. Controlla keyword illegali nell'URL
     const fullUrl = urlObj.toString().toLowerCase();
     const matchedKeywords = ILLEGAL_KEYWORDS.filter(kw => fullUrl.includes(kw));
-    if (matchedKeywords.length >= 2) {
+    const veryHighRiskHits = VERY_HIGH_RISK_ILLEGAL_KEYWORDS.filter(kw => fullUrl.includes(kw));
+    const contextHits = ILLEGAL_CONTEXT_KEYWORDS.filter(kw => fullUrl.includes(kw));
+
+    if (veryHighRiskHits.length > 0 && contextHits.length > 0) {
+      result.isIllegal = true;
+      result.category = 'url-keyword-illegal';
+      result.severity = 'critical';
+      result.confidence = 'probable';
+      result.reason = `URL con keyword fortemente associate a pirateria: ${veryHighRiskHits.join(', ')}`;
+      result.details.push(`⚠️ Keyword ad altissimo rischio: ${veryHighRiskHits.join(', ')}`);
+    } else if (matchedKeywords.length >= 2) {
       result.isIllegal = true;
       result.category = 'suspicious-content';
       result.severity = 'high';
+      result.confidence = 'probable';
       result.reason = `Rilevate ${matchedKeywords.length} keyword associate a contenuto illegale: ${matchedKeywords.join(', ')}`;
       result.details.push(`⚠️ Rilevate keyword sospette: ${matchedKeywords.join(', ')}`);
     }
@@ -227,10 +479,11 @@
     const pathLower = urlObj.pathname.toLowerCase();
     const illegalPatterns = [/\/movie\//i, /\/watch\//i, /\/stream\//i, /\/torrent\//i, /\/download\//i, /\/mp3\//i];
     const matchedPatterns = illegalPatterns.filter(p => p.test(pathLower));
-    if (matchedPatterns.length > 0 && matchedKeywords.length > 0) {
+    if (matchedPatterns.length > 0 && (matchedKeywords.length > 0 || contextHits.length > 0)) {
       result.isIllegal = true;
       result.category = 'streaming-pattern';
       result.severity = 'high';
+      result.confidence = result.confidence === 'confirmed' ? 'confirmed' : 'probable';
       result.reason = 'Rilevato pattern di streaming illegale nell\'URL';
       result.details.push('⚠️ Struttura URL tipica di siti di streaming illegale');
     }
@@ -426,6 +679,11 @@
       tips.push('Il sito non usa HTTPS: evita login e pagamenti da questa pagina.');
     }
 
+    if (isPrivateOrInternalHost(urlObj.hostname)) {
+      tips.push('Host privato/interno: usa questo sito solo se sei nella rete giusta e ti fidi della fonte.');
+      tips.push('Per siti privati evita di inserire dati sensibili se il certificato HTTPS non e\' valido.');
+    }
+
     if (siteExists && siteExists.exists === false) {
       tips.push('Se il sito non risponde o è instabile, non riprovare inserendo dati personali.');
     }
@@ -448,24 +706,74 @@
   // Analizza la sicurezza del contenuto (identifica siti illegali e pericolosi)
   async function analyzeContentSafety(urlObj, urlStr) {
     const hostname = urlObj.hostname;
+    const domain = hostname.split('.').slice(-2).join('.');
+    const specialContentNotice = getSpecialTrustedNotice(hostname, domain);
+    const trustedScore = TRUSTED_DOMAINS[domain] || 0;
+
+    // Priority override: trusted public archives must not be hard-blocked by torrent blocklists.
+    if (specialContentNotice && trustedScore >= 95) {
+      return {
+        isIllegal: false,
+        category: null,
+        reason: null,
+        severity: null,
+        details: [
+          `✓ Dominio archivio pubblico altamente affidabile (${domain})`,
+          '⚠️ Contenuti eterogenei: verifica sempre il singolo file prima del download.',
+          'ℹ️ Consiglio: analizza file/URL diretto con VirusTotal prima dell\'apertura.'
+        ],
+        specialNotice: specialContentNotice,
+        vtData: null,
+        siteContentScore: 92,
+        riskPenalty: 0,
+        riskLevel: 'low',
+        snapshotUsed: false,
+        advice: specialContentNotice.tips || []
+      };
+    }
     
     // Rileva primo sito illegale
-    const illegalDetection = detectIllegalContent(urlObj, hostname);
+    const illegalDetection = await detectIllegalContent(urlObj, hostname);
     if (illegalDetection.isIllegal) {
+      const isConfirmed = illegalDetection.confidence === 'confirmed';
       return {
         isIllegal: true,
         category: illegalDetection.category,
         reason: illegalDetection.reason,
         severity: illegalDetection.severity,
+        confidence: illegalDetection.confidence,
         details: illegalDetection.details,
+        specialNotice: specialContentNotice,
         vtData: null,
-        siteContentScore: 5,
-        riskPenalty: 95,
+        siteContentScore: isConfirmed ? 5 : 22,
+        forcedScore: isConfirmed ? 5 : 25,
+        riskPenalty: isConfirmed ? 95 : 72,
         snapshotUsed: false,
         advice: [
           'Non inserire credenziali o dati personali su siti con contenuto illegale.',
           'Non scaricare file: il rischio malware su queste piattaforme è elevato.'
         ]
+      };
+    }
+
+    // Trusted major domains should not be downgraded to medium risk by heuristic content checks.
+    if (trustedScore >= 95) {
+      return {
+        isIllegal: false,
+        category: null,
+        reason: null,
+        severity: null,
+        details: [
+          `✓ Dominio altamente affidabile nel database interno (${domain})`,
+          '✓ Heuristics contenuto allineate al profilo di rischio basso'
+        ],
+        specialNotice: specialContentNotice,
+        vtData: null,
+        siteContentScore: 96,
+        riskPenalty: 0,
+        riskLevel: 'low',
+        snapshotUsed: false,
+        advice: specialContentNotice ? specialContentNotice.tips : []
       };
     }
 
@@ -513,6 +821,7 @@
       reason: null,
       severity: null,
       details: contentDetails,
+      specialNotice: specialContentNotice,
       vtData: vtUrlData,
       siteContentScore,
       riskPenalty,
@@ -531,6 +840,17 @@
     // 1. Controlla domini conosciuti
     const hostname = urlObj.hostname;
     const domain = hostname.split('.').slice(-2).join('.'); // Get "example.com"
+
+    // 0. Penalita' per siti privati/interni non verificabili pubblicamente
+    if (isPrivateOrInternalHost(hostname)) {
+      reputation -= 35;
+      details.push({
+        rule: 'private-site',
+        passed: false,
+        message: '⚠️ Sito privato/interno: affidabilita\' pubblica ridotta'
+      });
+      justifications.push('Host privato o intranet (localhost/LAN/internal): difficile verificarne affidabilita\' pubblica.');
+    }
     
     if (TRUSTED_DOMAINS[domain]) {
       reputation += Math.min(TRUSTED_DOMAINS[domain] - 70, 20);
@@ -887,6 +1207,17 @@
       details.push({rule:'punycode', passed:false, weight:20, message:'Dominio in punycode (possibile spoofing IDN)'});
     }
 
+    // Private/internal websites are not publicly verifiable
+    if (isPrivateOrInternalHost(urlObj.hostname)) {
+      score -= 25;
+      details.push({
+        rule:'private-host',
+        passed:false,
+        weight:25,
+        message:'Host privato/intranet (localhost, LAN o dominio interno): affidabilita\' pubblica bassa'
+      });
+    }
+
     // Check for suspicious TLDs
     const suspiciousTLDs = ['.tk', '.ml', '.ga', '.cf', '.su', '.ru'];
     const currentTLD = urlObj.hostname.substring(urlObj.hostname.lastIndexOf('.'));
@@ -1153,16 +1484,18 @@
     // Content Safety check - analisi del sito completo (contenuto + pattern + VT URL)
     const contentSafetyResult = await analyzeContentSafety(urlObj, urlStr);
     if (contentSafetyResult.isIllegal) {
-      score = 5; // Drastica riduzione per contenuto illegale
+      const forcedScore = typeof contentSafetyResult.forcedScore === 'number' ? contentSafetyResult.forcedScore : 5;
+      score = Math.min(score, forcedScore);
       details.push({
         rule: 'illegal-content',
         passed: false,
-        weight: 95,
+        weight: 100 - forcedScore,
         message: `🚫 CONTENUTO ILLEGALE RILEVATO: ${contentSafetyResult.reason}`,
         isIllegalContent: true,
         illegalDetails: contentSafetyResult.details,
         illegalCategory: contentSafetyResult.category,
-        illegalSeverity: contentSafetyResult.severity
+        illegalSeverity: contentSafetyResult.severity,
+        illegalConfidence: contentSafetyResult.confidence || 'probable'
       });
     } else {
       if (contentSafetyResult.siteContentScore !== undefined) {
@@ -1231,8 +1564,26 @@
       justifications: justifications,
       siteExists: reputationResult.siteExists,
       illegalContent: contentSafetyResult,
+      specialNotice: contentSafetyResult.specialNotice || null,
       userTips
     };
+  }
+
+  function appendSpecialNotice(container, specialNotice) {
+    if (!container || !specialNotice) return;
+
+    const li = document.createElement('li');
+    li.className = 'special-domain-notice-item';
+
+    const box = document.createElement('div');
+    box.className = 'special-domain-notice';
+    box.innerHTML = `
+      <div class="special-domain-notice-title">⭐ ${specialNotice.title}</div>
+      <div class="special-domain-notice-text">${specialNotice.message}</div>
+    `;
+
+    li.appendChild(box);
+    container.appendChild(li);
   }
 
   function appendTipsBox(container, tips) {
@@ -1276,20 +1627,29 @@
         'streaming-illegal': '📺 STREAMING PIRATA',
         'file-sharing': '📥 FILE SHARING ILLEGALE',
         'ebook-illegal': '📚 EBOOK PIRATA',
+        'software-piracy': '🎮 SOFTWARE / GIOCHI PIRATA',
         'academic-piracy': '🎓 PIRATERIA ACCADEMICA',
         'suspicious-content': '⚠️ CONTENUTO SOSPETTO',
-        'streaming-pattern': '📺 PATTERN STREAMING'
+        'streaming-pattern': '📺 PATTERN STREAMING',
+        'url-keyword-illegal': '🚫 URL PROBABILEMENTE ILLEGALE',
+        'external-torrent-blocklist': '🚫 BLOCCATO DA BLOCKLIST TORRENT'
       };
       const category = categoryLabel[report.illegalContent.category] || '🚫 CONTENUTO ILLEGALE';
-      const severityColor = report.illegalContent.severity === 'critical' ? '#d32f2f' : '#ff9800';
-      const severityLabel = report.illegalContent.severity === 'critical' ? 'CRITICA' : 'ALTA';
+      const severityMap = {
+        critical: { color: '#d32f2f', label: 'CRITICA' },
+        high: { color: '#ff9800', label: 'ALTA' },
+        medium: { color: '#ffb74d', label: 'MEDIA' }
+      };
+      const severityObj = severityMap[report.illegalContent.severity] || severityMap.high;
+      const severityColor = severityObj.color;
+      const confidenceLabel = report.illegalContent.confidence === 'confirmed' ? 'CONFERMATO' : 'PROBABILE';
       
       illegalBox.innerHTML = `
         <div class="illegal-content-header" style="color: ${severityColor};">
           <div class="illegal-content-icon" style="color: ${severityColor};">⛔</div>
           <div>
             <div class="illegal-content-title" style="color: ${severityColor};">${category}</div>
-            <div class="illegal-content-severity">Gravità: <strong>${severityLabel}</strong></div>
+            <div class="illegal-content-severity">Gravità: <strong>${severityObj.label}</strong> · Confidenza: <strong>${confidenceLabel}</strong></div>
           </div>
         </div>
         <div class="illegal-content-body">
@@ -1305,7 +1665,7 @@
       reasons.appendChild(illegalBox);
       appendTipsBox(reasons, report.userTips || report.illegalContent?.advice || []);
       
-      scoreValue.textContent = '5%';
+      scoreValue.textContent = (typeof report.score === 'number' ? report.score : 5) + '%';
       scoreValue.style.background = '#d32f2f';
       scoreLabel.textContent = '🚫 CONTENUTO ILLEGALE';
       scoreLabel.style.color = '#d32f2f';
@@ -1350,6 +1710,7 @@
 
     // Render detailed reasons
     reasons.innerHTML = '';
+    appendSpecialNotice(reasons, report.specialNotice);
     let reputationSection = null;
     
     report.details.forEach((d, idx) => {
@@ -1481,28 +1842,143 @@
   }
 
   // Optional: Allow user to set Google Safe Browsing API key
-  window.setGoogleApiKey = (key) => {
-    if (!key || key.trim().length < 5) {
-      alert('❌ Chiave API non valida');
+  function showSettingsStatus(message, type) {
+    const statusEl = document.getElementById('apiStatusMessage');
+    if (!statusEl) return;
+    statusEl.className = `settings-status ${type || ''}`.trim();
+    statusEl.textContent = message;
+  }
+
+  async function validateGoogleApiKey(key) {
+    const trimmed = (key || '').trim();
+    if (!/^AIza[0-9A-Za-z_-]{20,}$/.test(trimmed)) {
+      return { ok: false, reason: 'Formato chiave Google non valido (atteso AIza...)' };
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT + 3000);
+      const payload = {
+        client: { clientId: 'whysafe', clientVersion: '1.0' },
+        threatInfo: {
+          threatTypes: ['MALWARE', 'SOCIAL_ENGINEERING', 'UNWANTED_SOFTWARE'],
+          platformTypes: ['ANY_PLATFORM'],
+          threatEntryTypes: ['URL'],
+          threatEntries: [{ url: 'https://example.com' }]
+        }
+      };
+
+      const response = await fetch(
+        `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${trimmed}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        }
+      );
+      clearTimeout(timeoutId);
+
+      if (response.status === 401 || response.status === 403) {
+        return { ok: false, reason: 'Chiave Google non autorizzata o non valida' };
+      }
+
+      if (!response.ok) {
+        return { ok: false, reason: `Risposta API Google non valida (HTTP ${response.status})` };
+      }
+
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, reason: 'Impossibile validare la chiave Google (rete o timeout)' };
+    }
+  }
+
+  async function validateVirusTotalApiKey(key) {
+    const trimmed = (key || '').trim();
+    if (trimmed.length < 16) {
+      return { ok: false, reason: 'Chiave VirusTotal troppo corta' };
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT + 3000);
+      const response = await fetch('https://www.virustotal.com/api/v3/users/current', {
+        method: 'GET',
+        headers: { 'x-apikey': trimmed },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (response.status === 401 || response.status === 403) {
+        return { ok: false, reason: 'Chiave VirusTotal non valida o non autorizzata' };
+      }
+
+      if (!response.ok) {
+        return { ok: false, reason: `Risposta API VirusTotal non valida (HTTP ${response.status})` };
+      }
+
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, reason: 'Impossibile validare la chiave VirusTotal (rete o timeout)' };
+    }
+  }
+
+  window.setGoogleApiKey = async (key) => {
+    const trimmed = (key || '').trim();
+    if (!trimmed) {
+      showSettingsStatus('Inserisci una chiave Google Safe Browsing prima di salvare.', 'error');
       return;
     }
-    CONFIG.GOOGLE_SAFE_BROWSE_API = key.trim();
-    localStorage.setItem('googleSafeBrowseKey', key.trim());
-    alert('✓ API Key salvata nel browser locale! Essa sarà usata per i prossimi controlli.');
-    const gInput = document.getElementById('apiKeyInput');
-    if (gInput) gInput.value = '';
+
+    showSettingsStatus('Validazione chiave Google in corso...', 'info');
+    const validation = await validateGoogleApiKey(trimmed);
+    if (!validation.ok) {
+      showSettingsStatus(`Google Safe Browsing: ${validation.reason}`, 'error');
+      return;
+    }
+
+    CONFIG.GOOGLE_SAFE_BROWSE_API = trimmed;
+    localStorage.setItem('googleSafeBrowseKey', trimmed);
+    showSettingsStatus('Google Safe Browsing configurato correttamente.', 'success');
+    updateApiStatus();
   };
 
-  window.setVirusTotalApiKey = (key) => {
-    if (!key || key.trim().length < 8) {
-      alert('❌ Chiave VirusTotal non valida');
+  window.setVirusTotalApiKey = async (key) => {
+    const trimmed = (key || '').trim();
+    if (!trimmed) {
+      showSettingsStatus('Inserisci una chiave VirusTotal prima di salvare.', 'error');
       return;
     }
-    CONFIG.VIRUSTOTAL_API = key.trim();
-    localStorage.setItem('virusTotalApiKey', key.trim());
-    alert('✓ VirusTotal API Key salvata nel browser locale!');
+
+    showSettingsStatus('Validazione chiave VirusTotal in corso...', 'info');
+    const validation = await validateVirusTotalApiKey(trimmed);
+    if (!validation.ok) {
+      showSettingsStatus(`VirusTotal: ${validation.reason}`, 'error');
+      return;
+    }
+
+    CONFIG.VIRUSTOTAL_API = trimmed;
+    localStorage.setItem('virusTotalApiKey', trimmed);
+    showSettingsStatus('VirusTotal configurato correttamente.', 'success');
+    updateApiStatus();
+  };
+
+  window.clearGoogleApiKey = () => {
+    CONFIG.GOOGLE_SAFE_BROWSE_API = '';
+    localStorage.removeItem('googleSafeBrowseKey');
+    const gInput = document.getElementById('apiKeyInput');
+    if (gInput) gInput.value = '';
+    showSettingsStatus('Chiave Google Safe Browsing rimossa.', 'info');
+    updateApiStatus();
+  };
+
+  window.clearVirusTotalApiKey = () => {
+    CONFIG.VIRUSTOTAL_API = '';
+    localStorage.removeItem('virusTotalApiKey');
     const vtInput = document.getElementById('vtApiKeyInput');
     if (vtInput) vtInput.value = '';
+    showSettingsStatus('Chiave VirusTotal rimossa.', 'info');
+    updateApiStatus();
   };
 
   // Listen for API key button click
@@ -1514,28 +1990,68 @@
     window.setVirusTotalApiKey(e.detail);
   });
 
+  document.addEventListener('validateGsbKey', async (e) => {
+    const key = e.detail || '';
+    if (!key.trim()) {
+      showSettingsStatus('Inserisci una chiave Google da validare.', 'error');
+      return;
+    }
+    showSettingsStatus('Validazione chiave Google in corso...', 'info');
+    const validation = await validateGoogleApiKey(key);
+    showSettingsStatus(
+      validation.ok ? 'Chiave Google valida.' : `Google Safe Browsing: ${validation.reason}`,
+      validation.ok ? 'success' : 'error'
+    );
+  });
+
+  document.addEventListener('validateVtKey', async (e) => {
+    const key = e.detail || '';
+    if (!key.trim()) {
+      showSettingsStatus('Inserisci una chiave VirusTotal da validare.', 'error');
+      return;
+    }
+    showSettingsStatus('Validazione chiave VirusTotal in corso...', 'info');
+    const validation = await validateVirusTotalApiKey(key);
+    showSettingsStatus(
+      validation.ok ? 'Chiave VirusTotal valida.' : `VirusTotal: ${validation.reason}`,
+      validation.ok ? 'success' : 'error'
+    );
+  });
+
+  document.addEventListener('clearGsbKey', () => {
+    window.clearGoogleApiKey();
+  });
+
+  document.addEventListener('clearVtKey', () => {
+    window.clearVirusTotalApiKey();
+  });
+
   // Show API status indicator
   function updateApiStatus() {
     const statusEl = document.querySelector('.api-config');
-    if (statusEl && (CONFIG.GOOGLE_SAFE_BROWSE_API || CONFIG.VIRUSTOTAL_API)) {
-      let indicator = document.querySelector('.api-status-indicator');
-      if (!indicator) {
-        indicator = document.createElement('div');
-        indicator.className = 'api-status-indicator';
-        indicator.style.cssText = 'margin-top: 12px; padding: 8px 12px; background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4caf50; border-radius: 4px; color: #2e7d32; font-size: 13px; font-weight: 600; line-height: 1.6;';
-        statusEl.appendChild(indicator);
-      }
+    if (!statusEl) return;
 
-      const parts = [];
-      if (CONFIG.GOOGLE_SAFE_BROWSE_API) parts.push('✓ Google Safe Browsing attivo');
-      if (CONFIG.VIRUSTOTAL_API) parts.push('✓ VirusTotal attivo');
+    let indicator = document.querySelector('.api-status-indicator');
+    if (!indicator) {
+      indicator = document.createElement('div');
+      indicator.className = 'api-status-indicator';
+      statusEl.appendChild(indicator);
+    }
+
+    const parts = [];
+    if (CONFIG.GOOGLE_SAFE_BROWSE_API) parts.push('✓ Google Safe Browsing attivo');
+    if (CONFIG.VIRUSTOTAL_API) parts.push('✓ VirusTotal attivo');
+
+    if (parts.length === 0) {
+      indicator.className = 'api-status-indicator neutral';
+      indicator.textContent = 'Nessuna API configurata: Whysafe usa controlli locali + URLhaus.';
+    } else {
+      indicator.className = 'api-status-indicator';
       indicator.innerHTML = parts.join('<br>');
     }
   }
 
   // Initialize API status on page load
-  if (CONFIG.GOOGLE_SAFE_BROWSE_API || CONFIG.VIRUSTOTAL_API) {
-    setTimeout(updateApiStatus, 100);
-  }
+  setTimeout(updateApiStatus, 100);
 
 })();

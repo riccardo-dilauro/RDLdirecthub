@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>About — Whysafe</title>
+  <meta name="description" content="Scopri come funziona Whysafe: regole di analisi URL, limiti dello strumento e metodologia dei controlli di sicurezza.">
   <meta name="color-scheme" content="light dark">
   <script>
     (function () {
@@ -28,6 +29,7 @@
       <nav>
         <li><a href="index.html">Home</a></li>
         <li><a class="active" href="about.html">About</a></li>
+        <li><a href="settings.html">Impostazioni</a></li>
       </nav>
       <button class="theme-toggle" aria-label="Switch to dark mode">🌙</button>
       <div class="burger">
@@ -39,49 +41,78 @@
   </header>
   <main>
     <section class="about">
-      <h2>Come funziona</h2>
-      <p>Whysafe fornisce un controllo rapido e <strong>grossolano</strong> degli URL per aiutarti a identificare rischi evidenti (es. assenza di HTTPS, uso di IP, punycode, URL molto lunghi o caratteri sospetti).</p>
+      <h2>🔍 Sistema di Analisi Avanzato</h2>
+      <p><strong>Whysafe</strong> esegue controlli multi-livello per rilevare siti pericolosi:</p>
 
-      <h3>Le regole applicate</h3>
+      <h3>Livello 1: Analisi Locale (istantanea)</h3>
       <ul>
-        <li><strong>HTTPS:</strong> verifica del protocollo; assenza penalizza il punteggio.</li>
-        <li><strong>Host:</strong> presenza di indirizzo IP o punycode può indicare rischi.</li>
-        <li><strong>Lunghezza URL:</strong> URL eccessivamente lunghi possono essere sospetti.</li>
-        <li><strong>Caratteri sospetti:</strong> '@', tanti trattini, query string molto lunga, ecc.</li>
+        <li><strong>HTTPS:</strong> Se il sito non usa crittografia (−40%)</li>
+        <li><strong>Indirizzo IP:</strong> Uso di IP invece di dominio (−35%)</li>
+        <li><strong>Punycode/IDN:</strong> Possibile spoofing di dominio (−20%)</li>
+        <li><strong>TLD sospetti:</strong> Domini con estensioni rischiose come .tk, .ml (−15%)</li>
+        <li><strong>URL lungo:</strong> Possibile obfuscation (−18%)</li>
+        <li><strong>Caratteri @ e null bytes:</strong> Tecniche di phishing note (−25%, −20%)</li>
+        <li><strong>Typosquatting:</strong> Molti trattini nel dominio (−7 a −15%)</li>
+        <li><strong>URL Abbreviati:</strong> Nascondono il vero dominio (−15%)</li>
       </ul>
 
-      <h2>Come si usa</h2>
-      <ol>
-        <li>Vai alla home ("<a href="index.html">Controllo URL</a>")</li>
-        <li>Inserisci l'URL nel campo e clicca "Controlla"</li>
-        <li>Riceverai un punteggio (%) e le motivazioni (perché il punteggio è così)</li>
-      </ol>
-
-      <h2>Working & Processing (dietro le quinte)</h2>
-      <p>Whysafe opera solo lato client usando regole euristiche semplici:</p>
+      <h3>Livello 2: Verifiche Esterne</h3>
       <ul>
-        <li>Normalizzazione e parsing dell'URL tramite l'API <code>URL</code> del browser.</li>
-        <li>Applicazione di regole soggettive con pesi predefiniti (es. −30% per HTTP).</li>
-        <li>Aggregazione dei pesi per produrre un punteggio su 100.</li>
+        <li><strong>URLhaus:</strong> Database aggiornato di siti malevoli rilevati da ricercatori di malware (−50% se trovato)</li>
+        <li><strong>Google Safe Browsing:</strong> Database globale di phishing, malware e software indesiderato (−60% se rilevato)</li>
+        <li><strong>Blocklist Torrent Esterna:</strong> Feed aggiornato automatico per domini torrent/streaming</li>
       </ul>
 
-      <h3>Motivazioni progettuali</h3>
-      <p>L'obiettivo è fornire un'analisi rapida e leggibile, non una verifica esaustiva. Questo strumento aiuta a individuare segnali evidenti di rischio ma non sostituisce controlli dinamici (es. scansioni server-side, verifiche DNS/WHOIS, o sandboxing).</p>
-
-      <h2>Limitazioni</h2>
+      <h3>Livello 3: Rilevamento Contenuto Illegale</h3>
       <ul>
-        <li>Non effettua chiamate remote per evitare problemi di CORS e privacy.</li>
-        <li>Non verifica il contenuto della pagina target (nessuna analisi malware completa).</li>
-        <li>Le regole sono semplici e possono generare falsi positivi/negativi.</li>
+        <li><strong>🎬 Torrent Illegali:</strong> The Pirate Bay, 1337x, RARBG, Kickass e altri</li>
+        <li><strong>📺 Streaming Pirata:</strong> FMovies, SolarMovies, Putlocker, 123Movies, Soap2Day</li>
+        <li><strong>🎮 Software/Giochi Pirata:</strong> SteamRIP, FitGirl, IGG-Games, Skidrow e simili</li>
+        <li><strong>⚠️ Pattern URL:</strong> rilevamento keyword sospette nel dominio/path</li>
       </ul>
 
-      <h2>Sicurezza & Privacy</h2>
-      <p>Il controllo avviene completamente nel tuo browser: nessun dato lascia la tua macchina. Se implementeremo funzionalità server-side, saranno specificate e richiesti eventuali consensi.</p>
+      <h3>Livello 4: Analisi Completa del Sito</h3>
+      <ul>
+        <li>Controllo segnali phishing nel contenuto pagina</li>
+        <li>Rilevamento riferimenti a file eseguibili pericolosi</li>
+        <li>Verifica presenza pagine fiducia (privacy/termini/contatti)</li>
+      </ul>
 
-      <h2>Contatti</h2>
-      <p>Per feedback o richieste: <a href="mailto:Whysafegroup@outlook.com">Whysafegroup@outlook.com</a></p>
+      <h3>Livello 5: Indice di Affidabilità del Sito (0-100%)</h3>
+      <ul>
+        <li><strong>Verifica Esistenza Sito:</strong> controlla se il server risponde</li>
+        <li><strong>Popolarità del dominio:</strong> domini noti hanno score maggiore</li>
+        <li><strong>Storico di sicurezza:</strong> segnali malware/phishing pregressi</li>
+        <li><strong>Reputazione TLD:</strong> TLD sospetti riducono affidabilità</li>
+      </ul>
 
-      <p class="note">Questa pagina supporta la stessa modalità light/dark della home; usa il pulsante in alto a destra per alternare i temi.</p>
+      <h3>Scoring Finale</h3>
+      <ul>
+        <li><strong style="color: #4caf50;">80-100%:</strong> ✓ SICURO</li>
+        <li><strong style="color: #ffb74d;">60-79%:</strong> ⚠ SOSPETTO</li>
+        <li><strong style="color: #ff9800;">30-59%:</strong> ⛔ RISCHIOSO</li>
+        <li><strong style="color: #d32f2f;">0-29%:</strong> 🚫 PERICOLOSO</li>
+      </ul>
+
+      <h3>🛡️ Buone Pratiche Utente</h3>
+      <ul>
+        <li>Non inserire password, OTP, dati bancari o seed phrase su siti sospetti.</li>
+        <li>Controlla sempre il dominio lettera per lettera prima del login.</li>
+        <li>Evita download di file eseguibili da fonti non ufficiali.</li>
+        <li>Se il punteggio è basso, cerca il servizio via sito ufficiale.</li>
+      </ul>
+
+      <h3>⚙️ Impostazioni API</h3>
+      <p>La configurazione di Google Safe Browsing e VirusTotal è disponibile nella pagina <a href="settings.html">Impostazioni</a>.</p>
+
+      <h3>🔒 Privacy dei Dati</h3>
+      <ul>
+        <li>Analisi locale nel browser, senza tracking.</li>
+        <li>URLhaus/GSB ricevono l'URL solo quando necessario per la verifica.</li>
+        <li>Le API key vengono salvate solo nel localStorage del browser.</li>
+      </ul>
+
+      <p class="note">Per supporto: <a href="mailto:Whysafegroup@outlook.com">Whysafegroup@outlook.com</a>.</p>
     </section>
   </main>
 
@@ -96,13 +127,14 @@
       </div>
 
       <nav class="footer-nav" aria-label="Footer">
+        <a href="settings.html">Impostazioni</a>
         <a href="privacy.html">Privacy</a>
         <a href="terms.html">Termini</a>
         <a href="contact.html">Contatti</a>
       </nav>
 
       <div class="footer-meta">
-        <div class="version">v0.1.0</div>
+        <div class="version">v2.5.0</div>
       </div>
     </div>
   </footer>
