@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo"><img src="Elementi/WHISAFE3.png"> </div>
+            <h1>Verifica ora il tuo URL con Whysafe!</h1>
+            <nav>
+                <li><a class="active" href="Index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+            </nav>
+            <button class="theme-toggle" aria-label="Switch to dark mode">🌙</button>
+            <div class="burger">
+                <div class=""></div>
+                <div class=""></div>
+                <div class=""></div>
+            </div>
+        </div>
+        
+    </header>
+    <main>
+      <section class="url-checker">
+        <h2>Controllo URL</h2>
+        <form id="urlForm" novalidate>
+          <label for="urlInput" class="sr-only">Inserisci URL da controllare</label>
+          <div class="input-row">
+            <input id="urlInput" type="url" placeholder="https://esempio.com" required>
+            <button type="submit" class="btn-check">Controlla</button>
+          </div>
+        </form>
+
+        <div id="result" class="result hidden" aria-live="polite">
+          <div class="score">
+            <strong>Punteggio:</strong>
+            <span id="scoreValue">—</span>
+            <span id="scoreLabel" class="score-label"></span>
+          </div>
+          <ul id="reasons" class="reasons"></ul>
+        </div>
+
+        <p class="note">Controllo grossolano: questo strumento usa regole semplici (HTTPS, lunghezza, presenza di IP o punycode, caratteri sospetti) per dare un punteggio e mostrare le motivazioni.</p>
+
+        <section class="how-it-works">
+          <h3>Come funziona il sito (breve)</h3>
+          <p>Whysafe esegue l'analisi direttamente nel tuo browser: l'URL viene normalizzato e analizzato con regole euristiche (es. HTTPS, host, lunghezza, caratteri sospetti). Ogni regola ha un peso che può ridurre il punteggio iniziale (100%); il risultato è un'indicazione rapida del rischio e vengono mostrate le motivazioni per spiegare il punteggio.</p>
+          <p>Per una descrizione più completa visita la pagina <a href="about.html">About</a>.</p>
+        </section>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <img class="footer-logo" src="Elementi/WHISAFE3.png" alt="Whysafe logo">
+          <div>
+            <div class="trademark">© 2025 Whysafe™</div>
+            <div class="small">Tutti i diritti riservati</div>
+          </div>
+        </div>
+
+        <nav class="footer-nav" aria-label="Footer">
+          <a href="privacy.html">Privacy</a>
+          <a href="terms.html">Termini</a>
+          <a href="contact.html">Contatti</a>
+        </nav>
+
+        <div class="footer-meta">
+          <div class="version">v0.1.0</div>
+        </div>
+      </div>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>"

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>About — Whysafe</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo"><img src="Elementi/WHISAFE3.png" alt="Whysafe logo"> </div>
+      <h1>Whysafe — Informazioni</h1>
+      <nav>
+        <li><a href="Index.html">Home</a></li>
+        <li><a class="active" href="about.html">About</a></li>
+      </nav>
+      <button class="theme-toggle" aria-label="Switch to dark mode">🌙</button>
+      <div class="burger">
+        <div class=""></div>
+        <div class=""></div>
+        <div class=""></div>
+      </div>
+    </div>
+  </header>
+  <main>
+    <section class="about">
+      <h2>Come funziona</h2>
+      <p>Whysafe fornisce un controllo rapido e <strong>grossolano</strong> degli URL per aiutarti a identificare rischi evidenti (es. assenza di HTTPS, uso di IP, punycode, URL molto lunghi o caratteri sospetti).</p>
+
+      <h3>Le regole applicate</h3>
+      <ul>
+        <li><strong>HTTPS:</strong> verifica del protocollo; assenza penalizza il punteggio.</li>
+        <li><strong>Host:</strong> presenza di indirizzo IP o punycode può indicare rischi.</li>
+        <li><strong>Lunghezza URL:</strong> URL eccessivamente lunghi possono essere sospetti.</li>
+        <li><strong>Caratteri sospetti:</strong> '@', tanti trattini, query string molto lunga, ecc.</li>
+      </ul>
+
+      <h2>Come si usa</h2>
+      <ol>
+        <li>Vai alla home ("<a href="Index.html">Controllo URL</a>")</li>
+        <li>Inserisci l'URL nel campo e clicca "Controlla"</li>
+        <li>Riceverai un punteggio (%) e le motivazioni (perché il punteggio è così)</li>
+      </ol>
+
+      <h2>Working & Processing (dietro le quinte)</h2>
+      <p>Whysafe opera solo lato client usando regole euristiche semplici:</p>
+      <ul>
+        <li>Normalizzazione e parsing dell'URL tramite l'API <code>URL</code> del browser.</li>
+        <li>Applicazione di regole soggettive con pesi predefiniti (es. −30% per HTTP).</li>
+        <li>Aggregazione dei pesi per produrre un punteggio su 100.</li>
+      </ul>
+
+      <h3>Motivazioni progettuali</h3>
+      <p>L'obiettivo è fornire un'analisi rapida e leggibile, non una verifica esaustiva. Questo strumento aiuta a individuare segnali evidenti di rischio ma non sostituisce controlli dinamici (es. scansioni server-side, verifiche DNS/WHOIS, o sandboxing).</p>
+
+      <h2>Limitazioni</h2>
+      <ul>
+        <li>Non effettua chiamate remote per evitare problemi di CORS e privacy.</li>
+        <li>Non verifica il contenuto della pagina target (nessuna analisi malware completa).</li>
+        <li>Le regole sono semplici e possono generare falsi positivi/negativi.</li>
+      </ul>
+
+      <h2>Sicurezza & Privacy</h2>
+      <p>Il controllo avviene completamente nel tuo browser: nessun dato lascia la tua macchina. Se implementeremo funzionalità server-side, saranno specificate e richiesti eventuali consensi.</p>
+
+      <h2>Contatti</h2>
+      <p>Per feedback o richieste: <a href="mailto:Whysafegroup@outlook.com">Whysafegroup@outlook.com</a></p>
+
+      <p class="note">Questa pagina supporta la stessa modalità light/dark della home; usa il pulsante in alto a destra per alternare i temi.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img class="footer-logo" src="Elementi/WHISAFE3.png" alt="Whysafe logo">
+        <div>
+          <div class="trademark">© 2025 Whysafe™</div>
+          <div class="small">Tutti i diritti riservati</div>
+        </div>
+      </div>
+
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Termini</a>
+        <a href="contact.html">Contatti</a>
+      </nav>
+
+      <div class="footer-meta">
+        <div class="version">v0.1.0</div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
