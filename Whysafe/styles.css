@@ -765,3 +765,118 @@ main {padding: 20px; background: var(--main-bg); min-height: 60vh; transition: b
   border-left-color: #ff5252 !important;
   color: #ff7043 !important;
 }
+
+/* ========== FULL SITE ANALYSIS + USER TIPS ========== */
+
+.site-content-box {
+  background: rgba(156, 199, 255, 0.08);
+  border: 1px solid rgba(156, 199, 255, 0.35);
+  border-radius: 10px;
+  padding: 14px;
+  margin: 14px 0;
+}
+
+.site-content-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.site-content-level {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.site-content-score {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.site-content-details {
+  border-top: 1px dashed rgba(0, 0, 0, 0.15);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.site-content-detail-item {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 6px 0;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.user-tips-box {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(139, 195, 74, 0.08) 100%);
+  border-left: 4px solid #4caf50;
+}
+
+.user-tips-title {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.user-tip-item {
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(0, 0, 0, 0.78);
+  margin: 6px 0;
+}
+
+.user-safety-guide {
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: 10px;
+  background: rgba(76, 175, 80, 0.06);
+  border: 1px solid rgba(76, 175, 80, 0.22);
+}
+
+.user-safety-guide h3 {
+  margin: 0 0 8px 0;
+}
+
+.user-safety-guide ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.user-safety-guide li {
+  margin: 6px 0;
+  line-height: 1.55;
+}
+
+[data-theme="dark"] .site-content-box {
+  background: rgba(127, 176, 255, 0.08);
+  border-color: rgba(127, 176, 255, 0.35);
+}
+
+[data-theme="dark"] .site-content-details {
+  border-top-color: rgba(230, 238, 248, 0.2);
+}
+
+[data-theme="dark"] .site-content-detail-item {
+  color: rgba(230, 238, 248, 0.78);
+}
+
+[data-theme="dark"] .user-tips-box {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.12) 0%, rgba(104, 159, 56, 0.08) 100%);
+  border-left-color: #66bb6a;
+}
+
+[data-theme="dark"] .user-tip-item {
+  color: rgba(230, 238, 248, 0.78);
+}
+
+[data-theme="dark"] .user-safety-guide {
+  background: rgba(76, 175, 80, 0.08);
+  border-color: rgba(102, 187, 106, 0.3);
+}

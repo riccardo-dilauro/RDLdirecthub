@@ -4,6 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <meta name="color-scheme" content="light dark">
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          var dark = stored ? stored === 'dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          } else {
+            document.documentElement.removeAttribute('data-theme');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -47,8 +61,6 @@
           </div>
         </div>
 
-        <p class="note"><strong>📌 Nota:</strong> Questo strumento esegue l'analisi nel tuo browser in tempo reale usando regole avanzate e API esterne gratuite.</p>
-
         <section class="how-it-works">
           <h3>🔍 Sistema di Analisi Avanzato</h3>
           <p><strong>Whysafe</strong> esegue controlli multi-livello per rilevare siti pericolosi:</p>
@@ -82,7 +94,16 @@
           </ul>
           <p><strong>Risultato:</strong> Se rileva contenuto illegale, il punteggio scende drasticamente a <strong>5%</strong> con avvertenza critica. Questi siti espongono l'utente a malware, spyware, e virus.</p>
 
-          <h4>Livello 4: Indice di Affidabilità del Sito (0-100%)</h4>
+          <h4>Livello 4: Analisi Completa del Sito (contenuto + struttura)</h4>
+          <p>Oltre all'URL, Whysafe controlla anche segnali dell'intero sito:</p>
+          <ul>
+            <li><strong>Contenuto della homepage:</strong> Ricerca pattern di phishing, urgenza falsa e richieste dati sensibili</li>
+            <li><strong>Download pericolosi:</strong> Rileva riferimenti frequenti a file eseguibili (.exe, .apk, .msi, etc.)</li>
+            <li><strong>Pagine fiducia:</strong> Verifica presenza di privacy policy, termini, contatti/about</li>
+            <li><strong>Verifica URL su VirusTotal:</strong> Con API key opzionale controlla rilevazioni multi-engine</li>
+          </ul>
+
+          <h4>Livello 5: Indice di Affidabilità del Sito (0-100%)</h4>
           <p>Un punteggio dedicato che calcola quanto è affidabile il dominio stesso, indipendentemente dal contenuto:</p>
           <ul>
             <li><strong>Verifica Esistenza Sito:</strong> Controlla se il sito è raggiungibile e risponde correttamente</li>
@@ -124,7 +145,7 @@
 
         <section class="api-config">
           <h3>⚙️ Configurazione API (Opzionale)</h3>
-          <p>Per abilitare il controllo con <strong>Google Safe Browsing</strong>, puoi configurare una chiave API:</p>
+          <p>Per abilitare i controlli avanzati con <strong>Google Safe Browsing</strong> e <strong>VirusTotal</strong>, puoi configurare le chiavi API:</p>
           
           <div style="background: rgba(0,0,0,0.04); padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 3px solid var(--accent);">
             <ol style="margin: 0; padding-left: 20px;">
@@ -132,7 +153,7 @@
               <li>Crea un progetto (se non lo hai)</li>
               <li>Abilita <strong>Safe Browsing API</strong></li>
               <li>Crea una chiave API (tipo "Browser")</li>
-              <li>Incolla la chiave qui:</li>
+              <li>Incolla le chiavi qui:</li>
             </ol>
           </div>
 
@@ -142,10 +163,28 @@
               Salva Chiave
             </button>
           </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <input id="vtApiKeyInput" type="password" placeholder="Incolla la chiave API VirusTotal (opzionale ma consigliata)" style="flex: 1;">
+            <button type="button" onclick="document.dispatchEvent(new CustomEvent('setVtApiKey', {detail: document.getElementById('vtApiKeyInput').value}))" style="background: #ef6c00; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+              Salva VirusTotal
+            </button>
+          </div>
           
           <p style="font-size: 12px; color: rgba(0,0,0,0.5); margin-top: 8px;">
-            💡 La chiave è salvata solo nel tuo browser locale. Non è mai inviata a server esterni.
+            💡 Le chiavi sono salvate solo nel tuo browser locale. Non sono memorizzate su server di Whysafe.
           </p>
+        </section>
+
+        <section class="user-safety-guide">
+          <h3>🛡️ Buone Pratiche Utente</h3>
+          <ul>
+            <li>Non inserire mai password, OTP, IBAN, numero carta o seed phrase su siti sospetti.</li>
+            <li>Controlla sempre il dominio lettera per lettera prima di fare login.</li>
+            <li>Evita download di file eseguibili da siti non ufficiali.</li>
+            <li>Se il punteggio è sotto 60%, cerca il servizio tramite fonte ufficiale.</li>
+            <li>Usa autenticazione a due fattori (2FA) su account importanti.</li>
+          </ul>
         </section>
 
         <section class="data-privacy">
@@ -176,7 +215,7 @@
         </nav>
 
         <div class="footer-meta">
-          <div class="version">v2.3.0</div>
+          <div class="version">v2.4.0</div>
         </div>
       </div>
     </footer>

@@ -63,8 +63,10 @@
   // Configuration for external APIs
   const CONFIG = {
     GOOGLE_SAFE_BROWSE_API: localStorage.getItem('googleSafeBrowseKey') || '', // User can set this
+    VIRUSTOTAL_API: localStorage.getItem('virusTotalApiKey') || '', // Optional but recommended
     URLHAUS_API: 'https://urlhaus-api.abuse.ch/v1/url/',
     ABUSEIPDB_API: 'https://api.abuseipdb.com/api/v2/check', // Requires key
+    CONTENT_PROXY_BASE: 'https://r.jina.ai/http://',
     CACHE_DURATION: 3600000, // 1 hour cache
     REQUEST_TIMEOUT: 5000 // 5 seconds timeout
   };
@@ -236,8 +238,17 @@
     return result;
   }
 
-  // Scansione dettagliata con VirusTotal URL API
+  function toBase64Url(str) {
+    return btoa(unescape(encodeURIComponent(str)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+  }
+
+  // Scansione dettagliata con VirusTotal URL API (richiede API key)
   async function scanWithVTUrl(urlStr) {
+    if (!CONFIG.VIRUSTOTAL_API) return null;
+
     try {
       const cacheKey = 'vt_url_scan_' + urlStr;
       const cached = getCachedResult(cacheKey);
@@ -246,31 +257,63 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT + 2000);
 
-      // VirusTotal URL scan API endpoint (no key required for basic lookup)
-      const response = await fetch(
-        `https://www.virustotal.com/gui/home/url?query=${encodeURIComponent(urlStr)}`,
+      // 1) URL report diretto (metodo più veloce)
+      const urlId = toBase64Url(urlStr);
+      let response = await fetch(
+        `https://www.virustotal.com/api/v3/urls/${urlId}`,
         {
           method: 'GET',
+          headers: { 'x-apikey': CONFIG.VIRUSTOTAL_API },
           signal: controller.signal
         }
       ).catch(() => null);
 
-      clearTimeout(timeoutId);
-
+      // 2) Fallback: submit URL e usa stats analisi
       if (!response || !response.ok) {
-        // Se VirusTotal non disponibile, return null
-        return null;
+        const submitResponse = await fetch(
+          'https://www.virustotal.com/api/v3/urls',
+          {
+            method: 'POST',
+            headers: {
+              'x-apikey': CONFIG.VIRUSTOTAL_API,
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: 'url=' + encodeURIComponent(urlStr),
+            signal: controller.signal
+          }
+        ).catch(() => null);
+
+        if (!submitResponse || !submitResponse.ok) {
+          clearTimeout(timeoutId);
+          return null;
+        }
+
+        const submitData = await submitResponse.json();
+        const stats = submitData?.data?.attributes?.stats || {};
+        const result = {
+          source: 'vt-analysis-submit',
+          malicious: stats.malicious || 0,
+          suspicious: stats.suspicious || 0,
+          harmless: stats.harmless || 0,
+          undetected: stats.undetected || 0
+        };
+
+        setCachedResult(cacheKey, result);
+        clearTimeout(timeoutId);
+        return result;
       }
 
-      // Parse della risposta per estrarre info di scansione
-      // (In pratica una scansione completa richiede API key; restituiamo un placeholder)
+      clearTimeout(timeoutId);
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      const stats = data?.data?.attributes?.last_analysis_stats || {};
       const result = {
-        urlScanned: urlStr,
-        isAvailable: true,
-        engines: 0,
-        malicious: 0,
-        suspicious: 0,
-        details: 'URL sottoposto a scansione da VirusTotal'
+        source: 'vt-url-report',
+        malicious: stats.malicious || 0,
+        suspicious: stats.suspicious || 0,
+        harmless: stats.harmless || 0,
+        undetected: stats.undetected || 0
       };
 
       setCachedResult(cacheKey, result);
@@ -281,21 +324,201 @@
     }
   }
 
+  async function fetchSiteSnapshot(urlObj) {
+    try {
+      const target = `${urlObj.hostname}${urlObj.pathname || '/'}`;
+      const cacheKey = 'site_snapshot_' + target;
+      const cached = getCachedResult(cacheKey);
+      if (cached) return cached;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT + 3000);
+      const snapshotUrl = CONFIG.CONTENT_PROXY_BASE + target;
+      const response = await fetch(snapshotUrl, {
+        method: 'GET',
+        signal: controller.signal
+      }).catch(() => null);
+      clearTimeout(timeoutId);
+
+      if (!response || !response.ok) return null;
+
+      const text = (await response.text()) || '';
+      const result = {
+        fetched: text.length > 0,
+        text: text.slice(0, 120000) // evita payload enormi
+      };
+
+      setCachedResult(cacheKey, result);
+      return result;
+    } catch (e) {
+      console.warn('Site snapshot fetch failed:', e.message);
+      return null;
+    }
+  }
+
+  function analyzeSnapshotContent(snapshotText) {
+    const text = (snapshotText || '').toLowerCase();
+    let score = 78;
+    const findings = [];
+    const advice = [];
+
+    const severePatterns = [
+      'seed phrase', 'wallet recovery', 'private key', 'metamask verify',
+      'unlock account immediately', 'confirm your bank password'
+    ];
+    const phishingTerms = ['verify account', 'suspend', 'urgent action', 'password reset required', 'confirm identity'];
+    const downloadBait = ['free crack', 'keygen', 'serial key', 'download activated'];
+    const executableHints = ['.exe', '.msi', '.apk', '.bat', '.scr', '.dmg'];
+
+    const severeHits = severePatterns.filter(p => text.includes(p));
+    if (severeHits.length > 0) {
+      score -= Math.min(40, severeHits.length * 12);
+      findings.push(`⛔ Richieste estremamente rischiose rilevate: ${severeHits.join(', ')}`);
+      advice.push('Non inserire seed phrase, codici OTP, password bancaria o chiavi wallet.');
+    }
+
+    const phishingHits = phishingTerms.filter(p => text.includes(p));
+    if (phishingHits.length > 0) {
+      score -= Math.min(25, phishingHits.length * 6);
+      findings.push(`⚠️ Linguaggio da phishing rilevato: ${phishingHits.join(', ')}`);
+      advice.push('Verifica sempre il dominio ufficiale prima di fare login.');
+    }
+
+    const baitHits = downloadBait.filter(p => text.includes(p));
+    if (baitHits.length > 0) {
+      score -= Math.min(18, baitHits.length * 5);
+      findings.push(`⚠️ Pattern download sospetti rilevati: ${baitHits.join(', ')}`);
+      advice.push('Evita file eseguibili o crack scaricati da siti non ufficiali.');
+    }
+
+    const executableCount = executableHints.reduce((acc, token) => {
+      return acc + (text.split(token).length - 1);
+    }, 0);
+    if (executableCount >= 3) {
+      score -= 12;
+      findings.push('⚠️ Numerosi riferimenti a file eseguibili rilevati nel contenuto del sito.');
+      advice.push('Scansiona qualsiasi download con antivirus prima di aprirlo.');
+    }
+
+    const hasTrustPages = /privacy|termini|terms|contact|contatti|about|chi siamo/.test(text);
+    if (hasTrustPages) {
+      score += 8;
+      findings.push('✓ Il sito espone pagine informative (privacy/termini/contatti).');
+    } else {
+      score -= 6;
+      findings.push('⚠️ Mancano riferimenti chiari a privacy/termini/contatti.');
+      advice.push('Usa il sito con cautela se non trovi privacy policy o contatti verificabili.');
+    }
+
+    const hasHttpsHints = /https:\/\//.test(text);
+    if (hasHttpsHints) score += 2;
+
+    score = Math.max(0, Math.min(100, Math.round(score)));
+    return { score, findings, advice };
+  }
+
+  function generateSafetyTips({ urlObj, score, contentSafety, siteExists }) {
+    const tips = [];
+
+    tips.push('Non inserire password, dati bancari o codici OTP se hai dubbi anche minimi sul sito.');
+
+    if (urlObj.protocol !== 'https:') {
+      tips.push('Il sito non usa HTTPS: evita login e pagamenti da questa pagina.');
+    }
+
+    if (siteExists && siteExists.exists === false) {
+      tips.push('Se il sito non risponde o è instabile, non riprovare inserendo dati personali.');
+    }
+
+    if (contentSafety && contentSafety.siteContentScore <= 55) {
+      tips.push('Contenuto ad alto rischio: non scaricare file e non autorizzare estensioni/plugin.');
+    }
+
+    if (contentSafety && contentSafety.vtData && contentSafety.vtData.malicious > 0) {
+      tips.push('VirusTotal ha trovato segnalazioni malevole: chiudi il sito e non interagire.');
+    }
+
+    if (score < 60) {
+      tips.push('Per sicurezza, cerca il servizio via motore di ricerca ufficiale invece di usare direttamente questo URL.');
+    }
+
+    return Array.from(new Set(tips)).slice(0, 6);
+  }
+
   // Analizza la sicurezza del contenuto (identifica siti illegali e pericolosi)
   async function analyzeContentSafety(urlObj, urlStr) {
     const hostname = urlObj.hostname;
-    const domain = hostname.split('.').slice(-2).join('.');
     
     // Rileva primo sito illegale
     const illegalDetection = detectIllegalContent(urlObj, hostname);
+    if (illegalDetection.isIllegal) {
+      return {
+        isIllegal: true,
+        category: illegalDetection.category,
+        reason: illegalDetection.reason,
+        severity: illegalDetection.severity,
+        details: illegalDetection.details,
+        vtData: null,
+        siteContentScore: 5,
+        riskPenalty: 95,
+        snapshotUsed: false,
+        advice: [
+          'Non inserire credenziali o dati personali su siti con contenuto illegale.',
+          'Non scaricare file: il rischio malware su queste piattaforme è elevato.'
+        ]
+      };
+    }
+
+    const [vtUrlData, snapshot] = await Promise.all([
+      scanWithVTUrl(urlStr),
+      fetchSiteSnapshot(urlObj)
+    ]);
+
+    let siteContentScore = 72;
+    const contentDetails = [];
+    let advice = [];
+
+    if (snapshot && snapshot.fetched) {
+      const snapshotAnalysis = analyzeSnapshotContent(snapshot.text);
+      siteContentScore = snapshotAnalysis.score;
+      contentDetails.push(...snapshotAnalysis.findings);
+      advice = advice.concat(snapshotAnalysis.advice);
+    } else {
+      contentDetails.push('⚠️ Analisi contenuto limitata: snapshot del sito non disponibile dal browser.');
+      advice.push('Quando possibile, controlla manualmente pagina Privacy, Termini e Contatti del sito.');
+    }
+
+    if (vtUrlData) {
+      if (vtUrlData.malicious > 0) {
+        siteContentScore -= Math.min(50, vtUrlData.malicious * 8);
+        contentDetails.push(`⛔ VirusTotal URL: ${vtUrlData.malicious} rilevazioni malevole.`);
+      } else if (vtUrlData.suspicious > 0) {
+        siteContentScore -= Math.min(22, vtUrlData.suspicious * 4);
+        contentDetails.push(`⚠️ VirusTotal URL: ${vtUrlData.suspicious} rilevazioni sospette.`);
+      } else {
+        contentDetails.push('✓ VirusTotal URL: nessuna rilevazione malevola nota.');
+      }
+    } else {
+      contentDetails.push('ℹ️ VirusTotal URL non disponibile (chiave API mancante o endpoint non raggiungibile).');
+      advice.push('Per controlli più completi, configura anche una API key VirusTotal.');
+    }
+
+    siteContentScore = Math.max(0, Math.min(100, Math.round(siteContentScore)));
+    const riskPenalty = siteContentScore >= 85 ? 0 : Math.round((85 - siteContentScore) * 0.7);
+    const riskLevel = siteContentScore >= 80 ? 'low' : (siteContentScore >= 60 ? 'medium' : 'high');
     
     return {
-      isIllegal: illegalDetection.isIllegal,
-      category: illegalDetection.category,
-      reason: illegalDetection.reason,
-      severity: illegalDetection.severity,
-      details: illegalDetection.details,
-      vtData: null
+      isIllegal: false,
+      category: null,
+      reason: null,
+      severity: null,
+      details: contentDetails,
+      vtData: vtUrlData,
+      siteContentScore,
+      riskPenalty,
+      riskLevel,
+      snapshotUsed: !!(snapshot && snapshot.fetched),
+      advice
     };
   }
 
@@ -491,6 +714,8 @@
 
   // Check VirusTotal domain reputation
   async function checkVirusTotal(hostname) {
+    if (!CONFIG.VIRUSTOTAL_API) return null;
+
     try {
       const cacheKey = 'vt_' + hostname;
       const cached = getCachedResult(cacheKey);
@@ -504,7 +729,7 @@
         `https://www.virustotal.com/api/v3/domains/${hostname}`,
         {
           method: 'GET',
-          headers: { 'x-apikey': 'dummy' }, // VT requires header but public domains work
+          headers: { 'x-apikey': CONFIG.VIRUSTOTAL_API },
           signal: controller.signal
         }
       );
@@ -925,7 +1150,7 @@
       }
     }
 
-    // Content Safety check - detecta siti illegali (torrent, streaming pirata, etc.)
+    // Content Safety check - analisi del sito completo (contenuto + pattern + VT URL)
     const contentSafetyResult = await analyzeContentSafety(urlObj, urlStr);
     if (contentSafetyResult.isIllegal) {
       score = 5; // Drastica riduzione per contenuto illegale
@@ -940,6 +1165,19 @@
         illegalSeverity: contentSafetyResult.severity
       });
     } else {
+      if (contentSafetyResult.siteContentScore !== undefined) {
+        score -= contentSafetyResult.riskPenalty || 0;
+        details.push({
+          rule: 'site-content-score',
+          passed: contentSafetyResult.siteContentScore >= 70,
+          weight: contentSafetyResult.riskPenalty || 0,
+          message: `🧠 Analisi Contenuto Sito: ${contentSafetyResult.siteContentScore}%`,
+          isSiteContentScore: true,
+          contentRiskLevel: contentSafetyResult.riskLevel || 'unknown',
+          contentDetails: contentSafetyResult.details || []
+        });
+      }
+
       details.push({
         rule: 'illegal-content',
         passed: true,
@@ -978,7 +1216,40 @@
     // Bound score
     if (score < 0) score = 0;
 
-    return { score, details, isValid: true, reputation: reputation, justifications: justifications, siteExists: reputationResult.siteExists, illegalContent: contentSafetyResult };
+    const userTips = generateSafetyTips({
+      urlObj,
+      score,
+      contentSafety: contentSafetyResult,
+      siteExists: reputationResult.siteExists
+    });
+
+    return {
+      score,
+      details,
+      isValid: true,
+      reputation: reputation,
+      justifications: justifications,
+      siteExists: reputationResult.siteExists,
+      illegalContent: contentSafetyResult,
+      userTips
+    };
+  }
+
+  function appendTipsBox(container, tips) {
+    if (!container || !tips || tips.length === 0) return;
+
+    const tipsBox = document.createElement('div');
+    tipsBox.className = 'user-tips-box';
+    tipsBox.innerHTML = '<strong class="user-tips-title">🛡️ Consigli di Sicurezza</strong>';
+
+    tips.slice(0, 6).forEach((tip) => {
+      const tipItem = document.createElement('div');
+      tipItem.className = 'user-tip-item';
+      tipItem.textContent = `• ${tip}`;
+      tipsBox.appendChild(tipItem);
+    });
+
+    container.appendChild(tipsBox);
   }
 
   function renderResult(report) {
@@ -1032,6 +1303,7 @@
         </div>
       `;
       reasons.appendChild(illegalBox);
+      appendTipsBox(reasons, report.userTips || report.illegalContent?.advice || []);
       
       scoreValue.textContent = '5%';
       scoreValue.style.background = '#d32f2f';
@@ -1052,6 +1324,7 @@
         <div class="site-not-found-desc">Il dominio esiste ma il sito non è attualmente disponibile oppure l'URL è non valido.</div>
       `;
       reasons.appendChild(warningBox);
+      appendTipsBox(reasons, report.userTips || []);
       
       scoreValue.textContent = '0%';
       scoreValue.style.background = '#d32f2f';
@@ -1124,6 +1397,37 @@
         }
         
         reputationSection = idx;
+      } else if (d.isSiteContentScore) {
+        const contentBox = document.createElement('div');
+        contentBox.className = 'site-content-box';
+        const levelMap = {
+          low: { label: '✓ BASSO RISCHIO', color: '#4caf50' },
+          medium: { label: '⚠ RISCHIO MEDIO', color: '#ff9800' },
+          high: { label: '⛔ RISCHIO ALTO', color: '#d32f2f' },
+          unknown: { label: '⚠ RISCHIO NON DEFINITO', color: '#ff9800' }
+        };
+        const level = levelMap[d.contentRiskLevel] || levelMap.unknown;
+        contentBox.innerHTML = `
+          <div class="site-content-head">
+            <strong>🧠 Analisi Completa del Sito</strong>
+            <span class="site-content-level" style="color: ${level.color};">${level.label}</span>
+          </div>
+          <div class="site-content-score">${d.message}</div>
+        `;
+
+        if (d.contentDetails && d.contentDetails.length > 0) {
+          const detailWrap = document.createElement('div');
+          detailWrap.className = 'site-content-details';
+          d.contentDetails.forEach((item) => {
+            const row = document.createElement('div');
+            row.className = 'site-content-detail-item';
+            row.textContent = `• ${item}`;
+            detailWrap.appendChild(row);
+          });
+          contentBox.appendChild(detailWrap);
+        }
+
+        reasons.appendChild(contentBox);
       } else if (d.isReputationDetail) {
         // Add to reputation section if not already started
         if (reputationSection === null) {
@@ -1148,6 +1452,8 @@
         reasons.appendChild(li);
       }
     });
+
+    appendTipsBox(reasons, report.userTips || []);
   }
 
   // Hook form with loading indicator
@@ -1183,7 +1489,20 @@
     CONFIG.GOOGLE_SAFE_BROWSE_API = key.trim();
     localStorage.setItem('googleSafeBrowseKey', key.trim());
     alert('✓ API Key salvata nel browser locale! Essa sarà usata per i prossimi controlli.');
-    document.getElementById('apiKeyInput').value = '';
+    const gInput = document.getElementById('apiKeyInput');
+    if (gInput) gInput.value = '';
+  };
+
+  window.setVirusTotalApiKey = (key) => {
+    if (!key || key.trim().length < 8) {
+      alert('❌ Chiave VirusTotal non valida');
+      return;
+    }
+    CONFIG.VIRUSTOTAL_API = key.trim();
+    localStorage.setItem('virusTotalApiKey', key.trim());
+    alert('✓ VirusTotal API Key salvata nel browser locale!');
+    const vtInput = document.getElementById('vtApiKeyInput');
+    if (vtInput) vtInput.value = '';
   };
 
   // Listen for API key button click
@@ -1191,23 +1510,31 @@
     window.setGoogleApiKey(e.detail);
   });
 
+  document.addEventListener('setVtApiKey', (e) => {
+    window.setVirusTotalApiKey(e.detail);
+  });
+
   // Show API status indicator
   function updateApiStatus() {
     const statusEl = document.querySelector('.api-config');
-    if (statusEl && CONFIG.GOOGLE_SAFE_BROWSE_API) {
+    if (statusEl && (CONFIG.GOOGLE_SAFE_BROWSE_API || CONFIG.VIRUSTOTAL_API)) {
       let indicator = document.querySelector('.api-status-indicator');
       if (!indicator) {
         indicator = document.createElement('div');
         indicator.className = 'api-status-indicator';
-        indicator.style.cssText = 'margin-top: 12px; padding: 8px 12px; background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4caf50; border-radius: 4px; color: #2e7d32; font-size: 13px; font-weight: 600;';
-        indicator.innerHTML = '✓ Google Safe Browsing API è configurato e attivo';
+        indicator.style.cssText = 'margin-top: 12px; padding: 8px 12px; background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4caf50; border-radius: 4px; color: #2e7d32; font-size: 13px; font-weight: 600; line-height: 1.6;';
         statusEl.appendChild(indicator);
       }
+
+      const parts = [];
+      if (CONFIG.GOOGLE_SAFE_BROWSE_API) parts.push('✓ Google Safe Browsing attivo');
+      if (CONFIG.VIRUSTOTAL_API) parts.push('✓ VirusTotal attivo');
+      indicator.innerHTML = parts.join('<br>');
     }
   }
 
   // Initialize API status on page load
-  if (CONFIG.GOOGLE_SAFE_BROWSE_API) {
+  if (CONFIG.GOOGLE_SAFE_BROWSE_API || CONFIG.VIRUSTOTAL_API) {
     setTimeout(updateApiStatus, 100);
   }
 
